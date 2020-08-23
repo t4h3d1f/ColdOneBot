@@ -1,0 +1,117 @@
+import discord
+import asyncio
+import logging
+import os
+import traceback
+from discord import FFmpegPCMAudio
+from discord.utils import get
+from discord.ext import commands
+import pymysql.cursors
+from random import randint
+
+
+mydb = pymysql.connect(
+    host=os.environ.get("SQL_HOST"),
+    port=3306,
+    db=os.environ.get("SQL_DB"),
+    user=os.environ.get("SQL_USER"),
+    password=os.environ.get("SQL_PASSWORD")
+)
+
+mycursor = mydb.cursor()
+
+
+#        if message.content.startswith('crack open a cold one'):
+#            sql = "INSERT INTO coldOnes (time, username) VALUES (%s,%s)"
+#            vals = (message.created_at, message.author.name)
+#            mycursor.execute(sql,vals)
+#            mydb.commit()
+#            mycursor.execute("SELECT COUNT(*) FROM coldOnes")
+#            myresult = mycursor.fetchall()
+#            await message.channel.send("Nice! {0} cold ones have been opened!".format(myresult[0][0]))
+
+
+bot = commands.Bot(command_prefix="&")
+
+
+@bot.command(name="coco", help="Crack open a cold one with the boys")
+async def coco(ctx):
+    message = ctx.message
+    print(message)
+    sql = "INSERT INTO coldOnes (time, username) VALUES (%s,%s)"
+    vals = (message.created_at, message.author.name)
+    mycursor.execute(sql, vals)
+    mydb.commit()
+    mycursor.execute("SELECT COUNT(*) FROM coldOnes")
+    myresult = mycursor.fetchall()
+    chance = randint(1, 100)
+    if chance > 90:
+        await message.channel.send("I'm gnot a gnelf, I'm gnot a gnoblin, I'm a gnome, and you've been GNOMED!".format(myresult[0][0]))
+    else:
+        await message.channel.send("Nice! {0} cold ones have been opened!".format(myresult[0][0]))
+
+    if message.author.name == "Adventure_Tom":
+        emoji = get(bot.emojis, name='Maybe')
+        await message.add_reaction(emoji)
+    if message.author.name == "Captain Crayfish":
+        emoji = get(bot.emojis, name='Wooo')
+        await message.add_reaction(emoji)
+    if not message.author.voice:
+        return
+    channel = message.author.voice.channel
+    if not channel:
+        return
+    await channel.connect()
+    audiochance = randint(1, 100)
+    if audiochance > 75:
+        source = FFmpegPCMAudio('YOOOOOOOOOOOUUUUUUU (152kbit_AAC).m4a')
+    else:
+        source = FFmpegPCMAudio('yooo.m4a')
+    player = ctx.voice_client.play(source)
+    while ctx.voice_client.is_playing():
+        await asyncio.sleep(1)
+    await ctx.voice_client.disconnect()
+
+
+@bot.command(name="stats", help="View your drinking stats")
+async def stats(message):
+    mycursor.execute('select COUNT(*) from coldOnes where username = %s;',
+                     (message.author.name,))
+    result = mycursor.fetchall()
+    print(result[0][0])
+    await message.channel.send("{0} has recorded {1} cold ones opened!".format(
+                                message.author.name, result[0][0]))
+    if result[0][0] > 100:
+        await message.channel.send('you alcholholic')
+
+
+@bot.command(name="leaderboard",
+             help="View the current drinking leaders of the server")
+async def leaderboard(message):
+    mycursor.execute('SELECT username from coldOnes GROUP BY username ORDER BY COUNT(*) DESC LIMIT 5;')
+    result = mycursor.fetchall()
+    response = ""
+    place = 1
+    print(result)
+    for name in result:
+        mycursor.execute('SELECT COUNT(*) from coldOnes where username=%s',
+                         (name[0],))
+        freq = mycursor.fetchall()
+        response += "{0}. {1} with {2} cold one{3} opened!\r\n".format(
+                    place, name[0], freq[0][0], '' if freq[0][0] == 1 else "s")
+        place += 1
+    await message.channel.send(response)
+
+
+def main():
+    try:
+        while(True):
+            print('hello')
+            bot.run(os.environ.get('DISCORD_TOKEN'))
+            bot.logout()
+    except Exception as e:
+        logging.error(traceback.format_exc())
+
+
+if __name__ == "__main__":
+    main()
