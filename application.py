@@ -10,15 +10,6 @@ import pymysql.cursors
 from random import randint
 
 
-mydb = pymysql.connect(
-    host=os.environ.get("SQL_HOST"),
-    port=3306,
-    db=os.environ.get("SQL_DB"),
-    user=os.environ.get("SQL_USER"),
-    password=os.environ.get("SQL_PASSWORD")
-)
-
-mycursor = mydb.cursor()
 
 
 #        if message.content.startswith('crack open a cold one'):
@@ -34,12 +25,25 @@ mycursor = mydb.cursor()
 bot = commands.Bot(command_prefix="&")
 
 
+def getConnection():
+    mydb = pymysql.connect(
+        host=os.environ.get("SQL_HOST"),
+        port=3306,
+        db=os.environ.get("SQL_DB"),
+        user=os.environ.get("SQL_USER"),
+        password=os.environ.get("SQL_PASSWORD")
+    )
+    return mydb
+
+
 @bot.command(name="coco", help="Crack open a cold one with the boys")
 async def coco(ctx):
     message = ctx.message
     print(message)
     sql = "INSERT INTO coldOnes (time, username) VALUES (%s,%s)"
     vals = (message.created_at, message.author.name)
+    mydb = getConnection()
+    mycursor = mydb.cursor()
     mycursor.execute(sql, vals)
     mydb.commit()
     mycursor.execute("SELECT COUNT(*) FROM coldOnes")
@@ -57,9 +61,11 @@ async def coco(ctx):
         emoji = get(bot.emojis, name='Wooo')
         await message.add_reaction(emoji)
     if not message.author.voice:
+        mydb.close()
         return
     channel = message.author.voice.channel
     if not channel:
+        mydb.close()
         return
     await channel.connect()
     audiochance = randint(1, 100)
@@ -71,10 +77,13 @@ async def coco(ctx):
     while ctx.voice_client.is_playing():
         await asyncio.sleep(1)
     await ctx.voice_client.disconnect()
+    mydb.close()
 
 
 @bot.command(name="stats", help="View your drinking stats")
 async def stats(message):
+    mydb = getConnection()
+    mycursor = mydb.cursor()
     mycursor.execute('select COUNT(*) from coldOnes where username = %s;',
                      (message.author.name,))
     result = mycursor.fetchall()
@@ -83,11 +92,14 @@ async def stats(message):
                                 message.author.name, result[0][0]))
     if result[0][0] > 100:
         await message.channel.send('you alcholholic')
+    mydb.close()
 
 
 @bot.command(name="leaderboard",
              help="View the current drinking leaders of the server")
 async def leaderboard(message):
+    mydb = getConnection()
+    mycursor = mydb.cursor()
     mycursor.execute('SELECT username from coldOnes GROUP BY username ORDER BY COUNT(*) DESC LIMIT 5;')
     result = mycursor.fetchall()
     response = ""
@@ -101,6 +113,7 @@ async def leaderboard(message):
                     place, name[0], freq[0][0], '' if freq[0][0] == 1 else "s")
         place += 1
     await message.channel.send(response)
+    mydb.close()
 
 
 def main():
