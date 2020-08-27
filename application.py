@@ -116,6 +116,19 @@ async def leaderboard(message):
     mydb.close()
 
 
+@bot.command(name="ohno", help="Try and and find out")
+async def ohno(message):
+    channel = message.author.voice.channel
+    if not channel:
+        return
+    await channel.connect()
+    source = FFmpegPCMAudio('Sad Trombone.m4a')
+    player = message.voice_client.play(source)
+    while message.voice_client.is_playing():
+        await asyncio.sleep(1)
+    await message.voice_client.disconnect()
+
+
 def main():
     try:
         while(True):
