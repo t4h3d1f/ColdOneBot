@@ -36,6 +36,20 @@ def getConnection():
     return mydb
 
 
+@bot.event
+async def durag_parser(message):
+    if "durag" in message.message.content:
+        if message.bot is None:
+            print(message)
+            sql = "INSERT INTO durag (time, username) VALUES (%s,%s)"
+            vals = (message.created_at, message.author.name)
+            mydb = getConnection()
+            mycursor = mydb.cursor()
+            mycursor.execute(sql, vals)
+            mydb.commit()
+            mydb.close()
+
+
 @bot.command(name="coco", help="Crack open a cold one with the boys")
 async def coco(ctx):
     message = ctx.message
@@ -124,6 +138,19 @@ async def ohno(message):
     await channel.connect()
     source = FFmpegPCMAudio('Sad Trombone.m4a')
     player = message.voice_client.play(source)
+    while message.voice_client.is_playing():
+        await asyncio.sleep(1)
+    await message.voice_client.disconnect()
+
+
+@bot.command(name="durag", help="Would you tell me the truth?")
+async def durag(message):
+    channel = message.author.voice.channel
+    if not channel:
+        return
+    await channel.connect()
+    source = FFmpegPCMAudio('Sad Trombone.m4a')
+    message.voice_client.play(source)
     while message.voice_client.is_playing():
         await asyncio.sleep(1)
     await message.voice_client.disconnect()
