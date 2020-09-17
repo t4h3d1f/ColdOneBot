@@ -38,6 +38,7 @@ def getConnection():
 
 @bot.event
 async def durag_parser(message):
+    print(message)
     if "durag" in message.message.content:
         if message.bot is None:
             print(message)
