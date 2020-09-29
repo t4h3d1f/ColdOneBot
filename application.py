@@ -148,8 +148,6 @@ async def ohno(message):
 async def durag(message):
     mydb = getConnection()
     mycursor = mydb.cursor()
-    mycursor.execute(sql, vals)
-    mydb.commit()
     mycursor.execute("SELECT COUNT(*) FROM durag")
     myresult = mycursor.fetchall()
     await message.channel.send("How do I look in my "+myresult[0][0]+" durag(s)?")
