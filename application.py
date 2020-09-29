@@ -37,7 +37,7 @@ def getConnection():
 
 
 @bot.event
-async def durag_parser(message):
+async def on_message(message):
     print(message)
     if "durag" in message.message.content:
         if message.bot is None:
@@ -146,15 +146,14 @@ async def ohno(message):
 
 @bot.command(name="durag", help="Would you tell me the truth?")
 async def durag(message):
-    channel = message.author.voice.channel
-    if not channel:
-        return
-    await channel.connect()
-    source = FFmpegPCMAudio('Sad Trombone.m4a')
-    message.voice_client.play(source)
-    while message.voice_client.is_playing():
-        await asyncio.sleep(1)
-    await message.voice_client.disconnect()
+    mydb = getConnection()
+    mycursor = mydb.cursor()
+    mycursor.execute(sql, vals)
+    mydb.commit()
+    mycursor.execute("SELECT COUNT(*) FROM durag")
+    myresult = mycursor.fetchall()
+    await message.channel.send("How do I look in my "+myresult[0][0]+" durag(s)?")"
+    mydb.close()
 
 
 def main():
