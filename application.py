@@ -150,7 +150,8 @@ async def durag(message):
     mycursor = mydb.cursor()
     mycursor.execute("SELECT COUNT(*) FROM durag")
     myresult = mycursor.fetchall()
-    await message.channel.send("How do I look in my "+myresult[0][0]+" durag(s)?")
+    await message.channel.send("How do I look in my {0} durag(s)?".format(
+        myresult[0][0]))
     mydb.close()
 
 
