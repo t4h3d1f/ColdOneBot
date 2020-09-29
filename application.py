@@ -40,15 +40,16 @@ def getConnection():
 async def on_message(message):
     await bot.process_commands(message)
     if "durag" in message.content:
-        if not message.author.bot:
-            print(message)
-            sql = "INSERT INTO durag (durag_time, username) VALUES (%s,%s)"
-            vals = (message.created_at, message.author.name)
-            mydb = getConnection()
-            mycursor = mydb.cursor()
-            mycursor.execute(sql, vals)
-            mydb.commit()
-            mydb.close()
+        if "&durag" not in message.content:
+            if not message.author.bot:
+                print(message)
+                sql = "INSERT INTO durag (durag_time, username) VALUES (%s,%s)"
+                vals = (message.created_at, message.author.name)
+                mydb = getConnection()
+                mycursor = mydb.cursor()
+                mycursor.execute(sql, vals)
+                mydb.commit()
+                mydb.close()
 
 
 @bot.command(name="coco", help="Crack open a cold one with the boys")
