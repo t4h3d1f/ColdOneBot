@@ -39,7 +39,7 @@ def getConnection():
 @bot.event
 async def on_message(message):
     print(message)
-    if "durag" in message.message.content:
+    if "durag" in message.content:
         if message.bot is None:
             print(message)
             sql = "INSERT INTO durag (time, username) VALUES (%s,%s)"
