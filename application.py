@@ -8,7 +8,7 @@ from discord.utils import get
 from discord.ext import commands
 import pymysql.cursors
 from random import randint
-
+from bisect import bisect_right
 
 
 
@@ -23,6 +23,14 @@ from random import randint
 
 
 bot = commands.Bot(command_prefix="&")
+
+# probability a track will play (1-1000) and the track name
+
+tracks = [
+    (750, 'yooo.m4a'),
+    (990, 'YOOOOOOOOOOOUUUUUUU (152kbit_AAC).m4a'),
+    (1000, 'Discord Message Sounds.m4a')
+]
 
 
 def getConnection():
@@ -84,12 +92,12 @@ async def coco(ctx):
         mydb.close()
         return
     await channel.connect()
-    audiochance = randint(1, 100)
-    if audiochance > 75:
-        source = FFmpegPCMAudio('YOOOOOOOOOOOUUUUUUU (152kbit_AAC).m4a')
-    else:
-        source = FFmpegPCMAudio('yooo.m4a')
-    player = ctx.voice_client.play(source)
+    # Generate a number between 1 and 1000
+    audiochance = randint(1, 1000)
+    # figure out what track this corrisponds to
+    index = bisect_right(tracks, audiochance)
+    source = FFmpegPCMAudio(tracks[index][1])
+    ctx.voice_client.play(source)
     while ctx.voice_client.is_playing():
         await asyncio.sleep(1)
     await ctx.voice_client.disconnect()
