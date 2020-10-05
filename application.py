@@ -95,7 +95,7 @@ async def coco(ctx):
     # Generate a number between 1 and 1000
     audiochance = randint(1, 1000)
     # figure out what track this corrisponds to
-    index = bisect_right(tracks, audiochance)
+    index = bisect_right(tracks, (audiochance,''))
     source = FFmpegPCMAudio(tracks[index][1])
     ctx.voice_client.play(source)
     while ctx.voice_client.is_playing():
