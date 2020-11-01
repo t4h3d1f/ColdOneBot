@@ -55,7 +55,9 @@ class Timer:
         print('timer initialized')
 
     async def _job(self):
-        await asyncio.sleep(randint(self._min_interval, self._max_interval))
+        sleepTime = randint(self._min_interval, self._max_interval)
+        print('sleeping for {0}'.format(sleepTime))
+        await asyncio.sleep(sleepTime)
         print('proc-d')
         await self._callback()
 
