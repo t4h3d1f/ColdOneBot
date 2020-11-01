@@ -123,7 +123,7 @@ async def coco(ctx):
 @bot.command(name="automeme", help="Automatic meming (☞⌐▀͡ ͜ʖ͡▀ )☞")
 async def automeme_enable(message):
     memer = message.author
-    memeThread = threading.Timer(randint(90, 360), blast_meme)
+    memeThread = threading.Timer(randint(90, 360), asyncio.ensure_future(blast_meme))
     memeThread.start()
 
 
@@ -219,7 +219,7 @@ def main():
         while(True):
             print('hello')
             bot.run(os.environ.get('DISCORD_TOKEN'))
-            bot.logout()
+            await bot.logout()
     except Exception as e:
         logging.error(traceback.format_exc())
 
