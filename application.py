@@ -44,6 +44,21 @@ memeThread = None
 memer = None
 
 
+class Timer:
+    def __init__(self, min_interval, max_interval, callback):
+        self._callback = callback
+        self._min_interval = min_interval
+        self._max_interval = max_interval
+        self._task = asyncio.ensure_future(self._job())
+
+    async def _job(self):
+        await asyncio.sleep(randint(self._min_interval, self._max_interval))
+        await self._callback()
+
+    def cancel(self):
+        self._task.cancel()
+
+
 def getConnection():
     mydb = pymysql.connect(
         host=os.environ.get("SQL_HOST"),
@@ -226,18 +241,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-class Timer:
-    def __init__(self, min_interval, max_interval, callback):
-        self._callback = callback
-        self._min_interval = min_interval
-        self._max_interval = max_interval
-        self._task = asyncio.ensure_future(self._job())
-
-    async def _job(self):
-        await asyncio.sleep(randint(self._min_interval, self._max_interval))
-        await self._callback()
-
-    def cancel(self):
-        self._task.cancel()
