@@ -140,6 +140,7 @@ async def coco(ctx):
 @bot.command(name="automeme", help="Automatic meming (☞⌐▀͡ ͜ʖ͡▀ )☞")
 async def automeme_enable(message):
     memer = message.author
+    print(memer)
     memeThread = Timer(90, 360, blast_meme)
 
 
