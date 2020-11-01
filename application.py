@@ -40,8 +40,8 @@ memeTracks = [
     'What is the airspeed velocity of an unladen swallow.m4a'
 ]
 # store meme thread
-memeThread = None
-memer = None
+memeThread
+memer
 
 
 class Timer:
