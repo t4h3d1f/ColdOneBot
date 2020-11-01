@@ -141,7 +141,7 @@ async def coco(ctx):
 async def automeme_enable(message):
     memer = message.author
     print(memer)
-    memeThread = Timer(90, 360, blast_meme)
+    memeThread = Timer(15, 60, blast_meme)
 
 
 # Stop memeThread and clear original user from memory
@@ -169,7 +169,13 @@ async def stats(message):
 
 
 async def blast_meme():
-    channel = bot.get_channel((bot.get_user(memer.id)).voice.channel.id)
+    userid = memer.id
+    print(id)
+    user = bot.get_user(userid)
+    print(user)
+    print(user.voice.channel)
+    print(user.voice.channel.id)
+    channel = bot.get_channel(user.voice.channel.id)
     if not channel:
         memeThread.cancel()
         return
