@@ -135,7 +135,7 @@ async def coco(ctx):
 # continues until manually disabled with "nofunnybusiness" or
 # user leaves voice chat.
 @bot.command(name="automeme", help="Automatic meming (☞⌐▀͡ ͜ʖ͡▀ )☞")
-async def automeme_enable(self, message):
+async def automeme_enable(message, self):
     self.memer = message.author
     print(self.memer)
     self.memeThread = Timer(15, 60, blast_meme)
@@ -143,7 +143,7 @@ async def automeme_enable(self, message):
 
 # Stop memeThread and clear original user from memory
 @bot.command(name="nofunnybusiness", help="Disables automeme")
-async def automeme_disable(self, message):
+async def automeme_disable(message, self):
     if self.memeThread is not None:
         if self.memeThread.is_alive():
             self.memeThread.cancel()
