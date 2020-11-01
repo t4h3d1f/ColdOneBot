@@ -181,7 +181,7 @@ async def blast_meme():
     user = bot.get_user(userid)
     print(user)
     member = server.get_member(user.id)
-    print(member)
+    print(member.nick)
     print(member.voice.channel)
     print(member.voice.channel.id)
     channel = bot.get_channel(member.voice.channel.id)
