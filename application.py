@@ -123,7 +123,7 @@ async def coco(ctx):
 @bot.command(name="automeme", help="Automatic meming (☞⌐▀͡ ͜ʖ͡▀ )☞")
 async def automeme_enable(message):
     memer = message.author
-    memeThread = threading.Timer(randint(90, 360), asyncio.ensure_future(blast_meme))
+    memeThread = Timer(90, 360, blast_meme)
     memeThread.start()
 
 
@@ -226,3 +226,18 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+class Timer:
+    def __init__(self, min_interval, max_interval, callback):
+        self._callback = callback
+        self._min_interval = min_interval
+        self._max_interval = max_interval
+        self._task = asyncio.ensure_future(self._job())
+
+    async def _job(self):
+        await asyncio.sleep(randint(self._min_interval, self._max_interval))
+        await self._callback()
+
+    def cancel(self):
+        self._task.cancel()
