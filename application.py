@@ -139,7 +139,6 @@ async def coco(ctx):
 async def automeme_enable(message):
     memer = message.author
     memeThread = Timer(90, 360, blast_meme)
-    memeThread.start()
 
 
 # Stop memeThread and clear original user from memory
