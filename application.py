@@ -39,9 +39,6 @@ memeTracks = [
     'Tell Me Does He Look Like a BITCH.m4a',
     'What is the airspeed velocity of an unladen swallow.m4a'
 ]
-# store meme thread
-memeThread
-memer
 
 
 class Timer:
@@ -138,19 +135,19 @@ async def coco(ctx):
 # continues until manually disabled with "nofunnybusiness" or
 # user leaves voice chat.
 @bot.command(name="automeme", help="Automatic meming (☞⌐▀͡ ͜ʖ͡▀ )☞")
-async def automeme_enable(message):
-    memer = message.author
-    print(memer)
-    memeThread = Timer(15, 60, blast_meme)
+async def automeme_enable(self, message):
+    self.memer = message.author
+    print(self.memer)
+    self.memeThread = Timer(15, 60, blast_meme)
 
 
 # Stop memeThread and clear original user from memory
 @bot.command(name="nofunnybusiness", help="Disables automeme")
-async def automeme_disable(message):
-    if memeThread is not None:
-        if memeThread.is_alive():
-            memeThread.cancel()
-            memer = None
+async def automeme_disable(self, message):
+    if self.memeThread is not None:
+        if self.memeThread.is_alive():
+            self.memeThread.cancel()
+            self.memer = None
 
 
 @bot.command(name="stats", help="View your drinking stats")
@@ -168,8 +165,8 @@ async def stats(message):
     mydb.close()
 
 
-async def blast_meme():
-    userid = memer.id
+async def blast_meme(self):
+    userid = self.memer.id
     print(id)
     user = bot.get_user(userid)
     print(user)
@@ -177,10 +174,10 @@ async def blast_meme():
     print(user.voice.channel.id)
     channel = bot.get_channel(user.voice.channel.id)
     if not channel:
-        memeThread.cancel()
+        self.memeThread.cancel()
         return
-    if memer not in channel.members:
-        memeThread.cancel()
+    if self.memer not in channel.members:
+        self.memeThread.cancel()
         return
     await channel.connect()
     # Pick a random track
