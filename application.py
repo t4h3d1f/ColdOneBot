@@ -43,6 +43,7 @@ memeTracks = [
 # global variables
 memer = None
 memeThread = None
+server = None
 
 
 class Timer:
@@ -142,6 +143,8 @@ async def coco(ctx):
 async def automeme_enable(message):
     global memer
     memer = message.author
+    global server
+    server = message.guild
     print(memer)
     global memeThread
     memeThread = Timer(15, 60, blast_meme)
@@ -177,9 +180,11 @@ async def blast_meme():
     print(id)
     user = bot.get_user(userid)
     print(user)
-    print(user.voice.channel)
-    print(user.voice.channel.id)
-    channel = bot.get_channel(user.voice.channel.id)
+    member = server.get_member(user.id)
+    print(member)
+    print(member.voice.channel)
+    print(member.voice.channel.id)
+    channel = bot.get_channel(member.voice.channel.id)
     if not channel:
         memeThread.cancel()
         return
