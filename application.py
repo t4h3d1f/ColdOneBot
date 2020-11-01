@@ -63,7 +63,7 @@ class Timer:
             print('proc-d')
             await self._callback()
 
-    def is_alive():
+    def is_alive(self):
         return self._running
         
     def cancel(self):
