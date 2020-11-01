@@ -50,9 +50,11 @@ class Timer:
         self._min_interval = min_interval
         self._max_interval = max_interval
         self._task = asyncio.ensure_future(self._job())
+        print('timer initialized')
 
     async def _job(self):
         await asyncio.sleep(randint(self._min_interval, self._max_interval))
+        print('proc-d')
         await self._callback()
 
     def cancel(self):
