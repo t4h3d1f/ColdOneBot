@@ -63,6 +63,9 @@ class Timer:
             print('proc-d')
             await self._callback()
 
+    def is_alive():
+        return self._running
+        
     def cancel(self):
         self._running = False
         self._task.cancel()
