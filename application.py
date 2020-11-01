@@ -151,7 +151,7 @@ async def stats(message):
     mydb.close()
 
 
-def blast_meme():
+async def blast_meme():
     channel = bot.get_channel((bot.get_user(memer.id)).voice.channel.id)
     if not channel:
         memeThread.cancel()
