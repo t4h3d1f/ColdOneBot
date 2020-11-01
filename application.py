@@ -195,10 +195,10 @@ async def blast_meme():
     # Pick a random track
     idx = randint(0, len(memeTracks)-1)
     source = FFmpegPCMAudio(memeTracks[idx])
-    ctx.voice_client.play(source)
-    while ctx.voice_client.is_playing():
+    server.voice_client.play(source)
+    while server.voice_client.is_playing():
         await asyncio.sleep(1)
-    await ctx.voice_client.disconnect()
+    await server.voice_client.disconnect()
 
 
 @bot.command(name="leaderboard",
