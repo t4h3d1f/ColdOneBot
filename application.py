@@ -219,7 +219,7 @@ def main():
         while(True):
             print('hello')
             bot.run(os.environ.get('DISCORD_TOKEN'))
-            await bot.logout()
+            bot.logout()
     except Exception as e:
         logging.error(traceback.format_exc())
 
