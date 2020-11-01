@@ -21,7 +21,7 @@ tracks = [
 ]
 
 memeTracks = [
-    'Discord Message Sounds.m4a',
+    'Discord Message Sound.m4a',
     'A True Meme War Veteran.m4a',
     'accidentally start a endgame boss fight.m4a',
     'Are you sober now.m4a',
@@ -65,7 +65,7 @@ class Timer:
 
     def is_alive(self):
         return self._running
-        
+
     def cancel(self):
         self._running = False
         self._task.cancel()
@@ -155,7 +155,7 @@ async def automeme_enable(message):
     server = message.guild
     print(memer)
     global memeThread
-    memeThread = Timer(15, 60, blast_meme)
+    memeThread = Timer(360, 2700, blast_meme)
 
 
 # Stop memeThread and clear original user from memory
