@@ -155,7 +155,7 @@ async def automeme_enable(message):
     server = message.guild
     print(memer)
     global memeThread
-    memeThread = Timer(360, 2700, blast_meme)
+    memeThread = Timer(180, 900, blast_meme)
 
 
 # Stop memeThread and clear original user from memory
