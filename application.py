@@ -55,7 +55,7 @@ class Timer:
         print('timer initialized')
 
     async def _job(self):
-        playlist = [random.randint(0, len(memeTracks)-1) for i in range(len(memeTracks))]
+        playlist = [randint(0, len(memeTracks)-1) for i in range(len(memeTracks))]
         playlistIdx = 0
         while self._running:
             sleepTime = randint(self._min_interval, self._max_interval)
