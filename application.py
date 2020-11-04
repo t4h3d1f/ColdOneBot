@@ -35,7 +35,6 @@ memeTracks = [
     'Morrowind.m4a',
     'Omae Wa Mou Shindeiru.m4a',
     'Poisoned.m4a',
-    'Potion Seller.m4a',
     'Tell Me Does He Look Like a BITCH.m4a',
     'What is the airspeed velocity of an unladen swallow.m4a'
 ]
@@ -56,12 +55,14 @@ class Timer:
         print('timer initialized')
 
     async def _job(self):
+        playlist = [random.randint(0, len(memeTracks)-1) for i in range(len(memeTracks))]
+        playlistIdx = 0
         while self._running:
             sleepTime = randint(self._min_interval, self._max_interval)
             print('sleeping for {0}'.format(sleepTime))
             await asyncio.sleep(sleepTime)
             print('proc-d')
-            await self._callback()
+            await self._callback(playlist[playlistIdx])
 
     def is_alive(self):
         return self._running
@@ -183,7 +184,7 @@ async def stats(message):
     mydb.close()
 
 
-async def blast_meme():
+async def blast_meme(idx):
     userid = memer.id
     print(id)
     user = bot.get_user(userid)
@@ -200,8 +201,6 @@ async def blast_meme():
         memeThread.cancel()
         return
     await channel.connect()
-    # Pick a random track
-    idx = randint(0, len(memeTracks)-1)
     source = FFmpegPCMAudio(memeTracks[idx])
     server.voice_client.play(source)
     while server.voice_client.is_playing():
