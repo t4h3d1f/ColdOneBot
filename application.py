@@ -63,6 +63,9 @@ class Timer:
             await asyncio.sleep(sleepTime)
             print('proc-d')
             await self._callback(playlist[playlistIdx])
+            playlistIdx = playlistIdx + 1
+            if (playlistIdx >= len(playlist)):
+                self._task.cancel()
 
     def is_alive(self):
         return self._running
