@@ -10,7 +10,11 @@ import pymysql.cursors
 from random import randint
 from bisect import bisect_right
 import threading
+
+# Customs
+from ColdOneCore import CoreColors
 from Bet import Bet
+from JokeGetter import JokeGetter
 
 botPrefix = "&"
 bot = commands.Bot(command_prefix=botPrefix)
@@ -259,17 +263,24 @@ async def durag(message):
         myresult[0][0]))
     mydb.close()
 
-# Betting
+# Joke Shit
+
+# Gets and sends out a random joke
+@bot.command(name="joke", help="Get me a joke :pog:")
+async def getMeAJokeBaby(ctx):
+    await ctx.channel.send(embed=JokeGetter.getJokeEmbed())
+
+# Bet Shit
 
 # Bot command, displays the current pogs standings
 @bot.command(name="pogs", help="Show pogs baby")
 async def showPogs(ctx):
     retVals = selectAllPogs()
-    embed = discord.Embed(color=0xffee15, title="Pog Leaderboard")
+    embed = discord.Embed(color=CoreColors.LeaderboardColor, title="Pog Leaderboard")
     embed.set_thumbnail(url=pogUrl)
     for row in retVals:
         embed.add_field(name=row[2], value=row[3], inline=True)
-    print(str(retVals))
+    print("Pogs: " + str(retVals))
     channel = ctx.message.channel
     await channel.send(embed=embed)
 
@@ -321,7 +332,6 @@ async def createBet(ctx, author, message):
 # Verifies that each user involved in the bet exists in the user table
 def checkUsersExist(payout, myCursor, db):
     usersToCheck = payout['winners'] + payout['losers']
-    print("users to check:" + str(usersToCheck))
     usersToAdd = []
     getAllSql = "SELECT discord_user_id FROM pogs;"
     insertSql = "INSERT INTO pogs(discord_user_id, username, pogs) VALUES (%s, %s, %s);"
@@ -334,7 +344,6 @@ def checkUsersExist(payout, myCursor, db):
             # add user
             insertVals = (str(curUser.id), str(curUser.name), 1000)
             myCursor.execute(insertSql, insertVals)
-            print("Inserting user: " + str(curUser))
             db.commit()
 
 # Updates pog table with winner and loser amounts
@@ -350,7 +359,6 @@ def updateUserPogs(payout, myCursor, db):
         sqlUpdateQuery += "UPDATE pogs SET pogs = pogs - " + str(payout['loseAmount'])
         sqlUpdateQuery += " WHERE discord_user_id = " + str(curLoser.id) + "\n"
     sqlUpdateQuery += ";"
-    print("Update query: " + sqlUpdateQuery)
     if sqlUpdateQuery:
         myCursor.execute(sqlUpdateQuery)
         db.commit()
