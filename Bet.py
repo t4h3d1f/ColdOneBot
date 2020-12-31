@@ -1,4 +1,5 @@
 import discord
+from ColdOneCore import CoreColors
 
 pogUrl = "https://img2.123clipartpng.com/poggers-transparent-picture-2101472-poggers-transparent-poggers-emote-transparent-clipart-300_300.png"
 
@@ -36,7 +37,7 @@ class Bet:
 
     # Creates the embed object for this bet
     def getEmbed(self):
-        self.embed = discord.Embed(color=0x008b09, title=self.embedTitle, description=self.embedDescription)
+        self.embed = discord.Embed(color=CoreColors.InteractColor, title=self.embedTitle, description=self.embedDescription)
         self.embed.set_author(name=self.embedAuthor)
         self.embed.set_footer(text=self.embedFooter)
         self.embed.set_thumbnail(url=pogUrl)
