@@ -1,9 +1,10 @@
 import discord
+from Discord.HasEmbed import HasEmbed
 from ColdOneCore import CoreColors
 
 pogUrl = "https://img2.123clipartpng.com/poggers-transparent-picture-2101472-poggers-transparent-poggers-emote-transparent-clipart-300_300.png"
 
-class Bet:
+class Bet(HasEmbed):
 
     activeBets = {}
 
@@ -45,35 +46,21 @@ class Bet:
 
     # Calculates the payouts for the winners and losers
     async def calculatePayouts(self, forsWin = True):
-        usersFor = []
-        usersAgainst = []
-        msg = await self.channel.fetch_message(self.embedMsgId)
-        # Count of the reactions
-        for curReact in msg.reactions:
-            users = await curReact.users().flatten()
-            if curReact.emoji == "👍":
-                for user in users:
-                    if not user.bot:
-                        usersFor.append(user)
-            elif curReact.emoji == "👎":
-                for user in users:
-                    if not user.bot:
-                        usersAgainst.append(user)
-
+        voteTally = self.countVote()
         countWinners = 0
         countLosers = 0
         winUsers = []
         loseUsers = []
         if forsWin:
-            countWinners = len(usersFor)
-            countLosers = len(usersAgainst)
-            winUsers = usersFor
-            loseUsers = usersAgainst
+            countWinners = len(voteTally['voteFor'])
+            countLosers = len(voteTally['voteAgainst'])
+            winUsers = voteTally['voteFor']
+            loseUsers = voteTally['voteAgainst']
         else:
-            countWinners = len(usersAgainst);
-            countLosers = len(usersFor)
-            winUsers = usersAgainst
-            loseUsers = usersFor
+            countWinners = len(voteTally['voteAgainst']);
+            countLosers = len(voteTally['voteFor'])
+            winUsers = voteTally['voteAgainst']
+            loseUsers = voteTally['voteFor']
 
         # Validate users lists. Anyone who bets twice loses
         for user in loseUsers:

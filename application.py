@@ -268,7 +268,7 @@ async def durag(message):
 # Gets and sends out a random joke
 @bot.command(name="joke", help="Get me a joke :pog:")
 async def getMeAJokeBaby(ctx):
-    await ctx.channel.send(embed=JokeGetter.getJokeEmbed())
+    await ctx.channel.send(embed=JokeGetter.getEmbed())
 
 # Bet Shit
 
@@ -315,19 +315,13 @@ async def createBet(ctx, author, message):
     amount = defaultAmount
     description = "";
     msgSplit = message.split(", ")
-    channel = ctx.message.channel
     if len(msgSplit) > 1:
         amount = int(msgSplit[0].strip())
         description = msgSplit[1]
     else:
         description = msgSplit[0]
     bet = Bet(author, amount, description)
-    sentEmbedMsg = await channel.send(embed=bet.getEmbed())
-    # Add reacts
-    await sentEmbedMsg.add_reaction("👍")
-    await sentEmbedMsg.add_reaction("👎")
-    bet.embedMsgId = sentEmbedMsg.id
-    bet.channel = channel
+    bet.sendEmbed(ctx)
 
 # Verifies that each user involved in the bet exists in the user table
 def checkUsersExist(payout, myCursor, db):
