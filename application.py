@@ -14,12 +14,12 @@ import threading
 # Customs
 from ColdOneCore import CoreColors
 from Bet import Bet
+from Vote import Vote
 from JokeGetter import JokeGetter
 
 botPrefix = "&"
 bot = commands.Bot(command_prefix=botPrefix)
 pogUrl = "https://img2.123clipartpng.com/poggers-transparent-picture-2101472-poggers-transparent-poggers-emote-transparent-clipart-300_300.png"
-defaultAmount = 50
 
 # probability a track will play (1-1000) and the track name
 tracks = [
@@ -263,12 +263,25 @@ async def durag(message):
         myresult[0][0]))
     mydb.close()
 
+# Vote Shit
+
+# Parses if this is vote creation or closure
+@bot.command(name="vote", help="Call a vote, exercise your civic right")
+async def parseVote(ctx):
+    cmdBase = botPrefix + "bet "
+    author = ctx.author.name
+    message = ctx.message.content[len(cmdBase):]
+    if Vote.doesUserVoteExist(author):
+        await Vote.closeVote(Vote.popVote(author))
+    else:
+        await Vote.createVote(ctx, author, message)
+
 # Joke Shit
 
 # Gets and sends out a random joke
 @bot.command(name="joke", help="Get me a joke :pog:")
 async def getMeAJokeBaby(ctx):
-    await ctx.channel.send(embed=JokeGetter.getJokeEmbed())
+    await ctx.channel.send(embed=JokeGetter.getEmbed())
 
 # Bet Shit
 
@@ -291,92 +304,9 @@ async def parseBet(ctx):
     author = ctx.author.name
     message = ctx.message.content[len(cmdBase):]
     if Bet.doesUserBetExist(author):
-        await closeBet(Bet.popBet(author), message)
+        await Bet.closeBet(getConnection(), Bet.popBet(author), message)
     else:
-        await createBet(ctx, author, message)
-
-# Closes down a bet
-async def closeBet(bet, message):
-    if not bet:
-        return
-    forsWin = message.find("win") != -1
-    payouts = await bet.calculatePayouts(forsWin)
-    print("Payout: " + str(payouts))
-    db = getConnection()
-    myCursor = db.cursor()
-    checkUsersExist(payouts, myCursor, db)
-    updateUserPogs(payouts, myCursor, db)
-    return
-
-# Sets up a bet, format being &bet
-# Ex: &bet I'm gonna beat your ass in TFT
-# Ex: &bet 25, You'll laugh before me
-async def createBet(ctx, author, message):
-    amount = defaultAmount
-    description = "";
-    msgSplit = message.split(", ")
-    channel = ctx.message.channel
-    if len(msgSplit) > 1:
-        amount = int(msgSplit[0].strip())
-        description = msgSplit[1]
-    else:
-        description = msgSplit[0]
-    bet = Bet(author, amount, description)
-    sentEmbedMsg = await channel.send(embed=bet.getEmbed())
-    # Add reacts
-    await sentEmbedMsg.add_reaction("👍")
-    await sentEmbedMsg.add_reaction("👎")
-    bet.embedMsgId = sentEmbedMsg.id
-    bet.channel = channel
-
-# Verifies that each user involved in the bet exists in the user table
-def checkUsersExist(payout, myCursor, db):
-    usersToCheck = payout['winners'] + payout['losers']
-    usersToAdd = []
-    getAllSql = "SELECT discord_user_id FROM pogs;"
-    insertSql = "INSERT INTO pogs(discord_user_id, username, pogs) VALUES (%s, %s, %s);"
-    myCursor.execute(getAllSql)
-    getAllRet = myCursor.fetchall()
-    print(str(getAllRet))
-    for curUser in usersToCheck:
-        tuple = (str(curUser.id),)
-        if not tuple in getAllRet:
-            # add user
-            insertVals = (str(curUser.id), str(curUser.name), 1000)
-            myCursor.execute(insertSql, insertVals)
-            db.commit()
-
-# Updates pog table with winner and loser amounts
-def updateUserPogs(payout, myCursor, db):
-    if ((not payout['winners']) or (not payout['losers'])):
-        return
-
-    sqlUpdateQuery = "";
-    for curWinner in payout['winners']:
-        sqlUpdateQuery += "UPDATE pogs SET pogs = pogs + " + str(payout['winAmount'])
-        sqlUpdateQuery += " WHERE discord_user_id = " + str(curWinner.id) + "\n"
-    for curLoser in payout['losers']:
-        sqlUpdateQuery += "UPDATE pogs SET pogs = pogs - " + str(payout['loseAmount'])
-        sqlUpdateQuery += " WHERE discord_user_id = " + str(curLoser.id) + "\n"
-    sqlUpdateQuery += ";"
-    if sqlUpdateQuery:
-        myCursor.execute(sqlUpdateQuery)
-        db.commit()
-
-# Returns all rows from pogs
-def selectAllPogs():
-    db = getConnection()
-    myCursor = db.cursor()
-    sql = "SELECT * FROM pogs ORDER BY pogs DESC;"
-    myCursor.execute(sql)
-    return myCursor.fetchall()
-
-# Prints out all pogs to python output
-def selectAndPrintAll():
-    print("All pogs: ")
-    rows = selectAllPogs()
-    for row in rows:
-        print(f'id:{row[0]} disc_id:{row[1]} user:{row[2]} pogs:{row[3]}')
+        await Bet.createBet(ctx, author, message)
 
 def main():
     try:
