@@ -288,7 +288,7 @@ async def getMeAJokeBaby(ctx):
 # Bot command, displays the current pogs standings
 @bot.command(name="pogs", help="Show pogs baby")
 async def showPogs(ctx):
-    retVals = selectAllPogs()
+    retVals = Bet.selectAllPogs(getConnection())
     embed = discord.Embed(color=CoreColors.LeaderboardColor, title="Pog Leaderboard")
     embed.set_thumbnail(url=pogUrl)
     for row in retVals:
@@ -307,6 +307,13 @@ async def parseBet(ctx):
         await Bet.closeBet(getConnection(), Bet.popBet(author), message)
     else:
         await Bet.createBet(ctx, author, message)
+
+@bot.command(name="fIxThEsEmOnEy", help="fix the money, gotta be on a special spot tho")
+async def fixMoney(ctx):
+    db = getConnection()
+    mycursor = db.cursor()
+    mycursor.execute("UPDATE pogs SET pogs = 1000")
+    db.commit()
 
 def main():
     try:
