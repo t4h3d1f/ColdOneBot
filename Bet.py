@@ -19,13 +19,64 @@ class Bet:
         del Bet.activeBets[author]
         return bet
 
+    # Returns all rows from pogs
+    @staticmethod
+    def selectAllPogs(db):
+        myCursor = db.cursor()
+        sql = "SELECT * FROM pogs ORDER BY pogs DESC;"
+        myCursor.execute(sql)
+        return myCursor.fetchall()
+
+    # Prints out all pogs to python output
+    @staticmethod
+    def selectAndPrintAll(db):
+        print("All pogs: ")
+        rows = selectAllPogs()
+        for row in rows:
+            print(f'id:{row[0]} disc_id:{row[1]} user:{row[2]} pogs:{row[3]}')
+
+    # Updates pog table with winner and loser amounts
+    @staticmethod
+    def updateUserPogs(payout, myCursor, db):
+        if ((not payout['winners']) or (not payout['losers'])):
+            return
+
+        sqlUpdateQuery = "";
+        for curWinner in payout['winners']:
+            sqlUpdateQuery += "UPDATE pogs SET pogs = pogs + " + str(payout['winAmount'])
+            sqlUpdateQuery += " WHERE discord_user_id = " + str(curWinner.id) + "\n"
+        for curLoser in payout['losers']:
+            sqlUpdateQuery += "UPDATE pogs SET pogs = pogs - " + str(payout['loseAmount'])
+            sqlUpdateQuery += " WHERE discord_user_id = " + str(curLoser.id) + "\n"
+        sqlUpdateQuery += ";"
+        if sqlUpdateQuery:
+            myCursor.execute(sqlUpdateQuery)
+            db.commit()
+
+    # Verifies that each user involved in the bet exists in the user table
+    @staticmethod
+    def checkUsersExist(payout, myCursor, db):
+        usersToCheck = payout['winners'] + payout['losers']
+        usersToAdd = []
+        getAllSql = "SELECT discord_user_id FROM pogs;"
+        insertSql = "INSERT INTO pogs(discord_user_id, username, pogs) VALUES (%s, %s, %s);"
+        myCursor.execute(getAllSql)
+        getAllRet = myCursor.fetchall()
+        print(str(getAllRet))
+        for curUser in usersToCheck:
+            tuple = (str(curUser.id),)
+            if not tuple in getAllRet:
+                # add user
+                insertVals = (str(curUser.id), str(curUser.name), 1000)
+                myCursor.execute(insertSql, insertVals)
+                db.commit()
+
     # Constructor, checks if the author has a bet and if not, adds to bets
     def __init__(self, author, amount = 50, desc = ""):
         if Bet.doesUserBetExist(author):
             return null
         self.amount = amount
         self.author = author
-
         self.embedTitle = "Poggy bet"
         self.embedAuthor = self.author
         self.embedDescription = "The bet amount is " + str(self.amount) + " pogs."
@@ -34,6 +85,8 @@ class Bet:
         self.embedFooter = "Bet with them with +1, or against them with -1."
         self.embedFooter += " End the bet by typing &bet, followed by win or lose."
         Bet.activeBets.update({self.author:self})
+
+    
 
     # Creates the embed object for this bet
     def getEmbed(self):

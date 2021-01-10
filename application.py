@@ -275,7 +275,7 @@ async def getMeAJokeBaby(ctx):
 # Bot command, displays the current pogs standings
 @bot.command(name="pogs", help="Show pogs baby")
 async def showPogs(ctx):
-    retVals = selectAllPogs()
+    retVals = Bet.selectAllPogs(getConnection())
     embed = discord.Embed(color=CoreColors.LeaderboardColor, title="Pog Leaderboard")
     embed.set_thumbnail(url=pogUrl)
     for row in retVals:
@@ -304,8 +304,8 @@ async def closeBet(bet, message):
     print("Payout: " + str(payouts))
     db = getConnection()
     myCursor = db.cursor()
-    checkUsersExist(payouts, myCursor, db)
-    updateUserPogs(payouts, myCursor, db)
+    Bet.checkUsersExist(payouts, myCursor, db)
+    Bet.updateUserPogs(payouts, myCursor, db)
     return
 
 # Sets up a bet, format being &bet
@@ -322,61 +322,14 @@ async def createBet(ctx, author, message):
     else:
         description = msgSplit[0]
     bet = Bet(author, amount, description)
+    # TODO: add amount validation
     sentEmbedMsg = await channel.send(embed=bet.getEmbed())
     # Add reacts
     await sentEmbedMsg.add_reaction("👍")
     await sentEmbedMsg.add_reaction("👎")
     bet.embedMsgId = sentEmbedMsg.id
     bet.channel = channel
-
-# Verifies that each user involved in the bet exists in the user table
-def checkUsersExist(payout, myCursor, db):
-    usersToCheck = payout['winners'] + payout['losers']
-    usersToAdd = []
-    getAllSql = "SELECT discord_user_id FROM pogs;"
-    insertSql = "INSERT INTO pogs(discord_user_id, username, pogs) VALUES (%s, %s, %s);"
-    myCursor.execute(getAllSql)
-    getAllRet = myCursor.fetchall()
-    print(str(getAllRet))
-    for curUser in usersToCheck:
-        tuple = (str(curUser.id),)
-        if not tuple in getAllRet:
-            # add user
-            insertVals = (str(curUser.id), str(curUser.name), 1000)
-            myCursor.execute(insertSql, insertVals)
-            db.commit()
-
-# Updates pog table with winner and loser amounts
-def updateUserPogs(payout, myCursor, db):
-    if ((not payout['winners']) or (not payout['losers'])):
-        return
-
-    sqlUpdateQuery = "";
-    for curWinner in payout['winners']:
-        sqlUpdateQuery += "UPDATE pogs SET pogs = pogs + " + str(payout['winAmount'])
-        sqlUpdateQuery += " WHERE discord_user_id = " + str(curWinner.id) + "\n"
-    for curLoser in payout['losers']:
-        sqlUpdateQuery += "UPDATE pogs SET pogs = pogs - " + str(payout['loseAmount'])
-        sqlUpdateQuery += " WHERE discord_user_id = " + str(curLoser.id) + "\n"
-    sqlUpdateQuery += ";"
-    if sqlUpdateQuery:
-        myCursor.execute(sqlUpdateQuery)
-        db.commit()
-
-# Returns all rows from pogs
-def selectAllPogs():
-    db = getConnection()
-    myCursor = db.cursor()
-    sql = "SELECT * FROM pogs ORDER BY pogs DESC;"
-    myCursor.execute(sql)
-    return myCursor.fetchall()
-
-# Prints out all pogs to python output
-def selectAndPrintAll():
-    print("All pogs: ")
-    rows = selectAllPogs()
-    for row in rows:
-        print(f'id:{row[0]} disc_id:{row[1]} user:{row[2]} pogs:{row[3]}')
+    # TODO: add react event validation
 
 def main():
     try:
