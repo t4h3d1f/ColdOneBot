@@ -15,6 +15,8 @@ import threading
 from ColdOneCore import CoreColors
 from Bet import Bet
 from JokeGetter import JokeGetter
+from Vote import Vote
+from EventHandlers.ReactionHandler import ReactionHandler
 
 botPrefix = "&"
 bot = commands.Bot(command_prefix=botPrefix)
@@ -52,7 +54,6 @@ memer = None
 memeThread = None
 server = None
 
-
 class Timer:
     def __init__(self, min_interval, max_interval, callback):
         self._callback = callback
@@ -81,7 +82,6 @@ class Timer:
     def cancel(self):
         self._running = False
         self._task.cancel()
-
 
 def getConnection():
     mydb = pymysql.connect(
@@ -263,6 +263,19 @@ async def durag(message):
         myresult[0][0]))
     mydb.close()
 
+# Vote Shit
+
+# Parses if this is vote creation or closure
+@bot.command(name="vote", help="Call a vote, exercise your civic right")
+async def parseVote(ctx):
+    cmdBase = botPrefix + "vote "
+    author = ctx.author.name
+    message = ctx.message.content[len(cmdBase):]
+    if Vote.doesUserVoteExist(author):
+        await Vote.closeVote(ctx, Vote.popVote(author))
+    else:
+        await Vote.createVote(ctx, author, message)
+
 # Joke Shit
 
 # Gets and sends out a random joke
@@ -291,45 +304,20 @@ async def parseBet(ctx):
     author = ctx.author.name
     message = ctx.message.content[len(cmdBase):]
     if Bet.doesUserBetExist(author):
-        await closeBet(Bet.popBet(author), message)
+        await Bet.closeBet(ctx, getConnection(), Bet.popBet(author), message)
     else:
-        await createBet(ctx, author, message)
+        await Bet.createBet(ctx, author, message)
 
-# Closes down a bet
-async def closeBet(bet, message):
-    if not bet:
-        return
-    forsWin = message.find("win") != -1
-    payouts = await bet.calculatePayouts(forsWin)
-    print("Payout: " + str(payouts))
+@bot.command(name="fIxThEsEmOnEy", help="fix the money, gotta be on a special spot tho")
+async def fixMoney(ctx):
     db = getConnection()
-    myCursor = db.cursor()
-    Bet.checkUsersExist(payouts, myCursor, db)
-    Bet.updateUserPogs(payouts, myCursor, db)
-    return
+    mycursor = db.cursor()
+    mycursor.execute("UPDATE pogs SET pogs = 1000")
+    db.commit()
 
-# Sets up a bet, format being &bet
-# Ex: &bet I'm gonna beat your ass in TFT
-# Ex: &bet 25, You'll laugh before me
-async def createBet(ctx, author, message):
-    amount = defaultAmount
-    description = "";
-    msgSplit = message.split(", ")
-    channel = ctx.message.channel
-    if len(msgSplit) > 1:
-        amount = int(msgSplit[0].strip())
-        description = msgSplit[1]
-    else:
-        description = msgSplit[0]
-    bet = Bet(author, amount, description)
-    # TODO: add amount validation
-    sentEmbedMsg = await channel.send(embed=bet.getEmbed())
-    # Add reacts
-    await sentEmbedMsg.add_reaction("👍")
-    await sentEmbedMsg.add_reaction("👎")
-    bet.embedMsgId = sentEmbedMsg.id
-    bet.channel = channel
-    # TODO: add react event validation
+@bot.event
+async def on_reaction_add(reaction, user):
+    ReactionHandler.checkForMessage(reaction, user)
 
 def main():
     try:

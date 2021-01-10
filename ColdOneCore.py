@@ -9,6 +9,7 @@
 class CoreColors:
     CoreColorPalette=[0x7eb8da, 0x92ddea, 0xffa5d8, 0xbe9ddf, 0x9579d1]
 
-    InteractColor = 0xffa5d8
-    LeaderboardColor = 0x9579d1
-    MessageColor = 0x7eb8da
+    InteractColor = CoreColorPalette[2]
+    LeaderboardColor = CoreColorPalette[4]
+    MessageColor = CoreColorPalette[0]
+    DefaultColor = CoreColorPalette[0]

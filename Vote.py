@@ -21,14 +21,16 @@ class Vote(VoteBase):
     # Creates a vote and sends its embed
     @staticmethod
     async def createVote(ctx, author, message):
+        if (not author) or (not message):
+            return
         vote = Vote(author=author, description=message)
         await vote.sendEmbed(ctx)
 
     @staticmethod
-    async def closeVote(vote):
+    async def closeVote(ctx, vote):
         if not vote:
             return
-        await vote._closeVote()
+        await vote._closeVote(ctx)
 
     def __init__(self, author, description):
         self.author = author
@@ -36,15 +38,18 @@ class Vote(VoteBase):
         super().__init__(title=description, author=author, color=CoreColors.InteractColor)
         Vote.activeVotes.update({self.author:self})
 
-    async def _closeVote(self):
+    async def _closeVote(self, ctx):
         tally = await self.countVote()
         await self.clearEmbed()
-        await self.getCloseEmbed(tally)
+        await self.getCloseEmbed(ctx, tally)
 
-    async def getCloseEmbed(self, tally):
-        ayesHaveIt = len(tally.get('voteFor')) > len(tally.get('voteAgainst'))
-
-        self.embed = None
-        self.embedTitle = "Vote over: " + self.voteDesc
-        self.embedDescription = "Ayes have it!" if ayesHaveIt else "Nays have it!"
-        await self.channel.send(embed=self.getEmbed())
+    async def getCloseEmbed(self, ctx, tally):
+        ayesHaveIt = len(tally.get('voteFor')) - len(tally.get('voteAgainst'))
+        super().setTitle("Vote over: " + self.voteDesc)
+        if ayesHaveIt > 0:
+            super().setDescription("Ayes have it!")
+        elif ayesHaveIt < 0:
+            super().setDescription("Nays have it!")
+        else:
+            super().setDescription("The vote's a tie!")
+        await self.sendEmbed(ctx, True)
