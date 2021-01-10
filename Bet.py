@@ -42,25 +42,33 @@ class Bet(VoteBase):
     # Updates pog table with winner and loser amounts
     @staticmethod
     def updateUserPogs(payout, myCursor, db):
-        if ((not payout['winners']) or (not payout['losers'])):
+        if ((not payout['winners']) and (not payout['losers'])):
             return
 
-        sqlUpdateQuery = "";
-        for curWinner in payout['winners']:
-            sqlUpdateQuery += "UPDATE pogs SET pogs = pogs + " + str(payout['winAmount'])
-            sqlUpdateQuery += " WHERE discord_user_id = " + str(curWinner.id) + "\n"
-        for curLoser in payout['losers']:
-            sqlUpdateQuery += "UPDATE pogs SET pogs = pogs - " + str(payout['loseAmount'])
-            sqlUpdateQuery += " WHERE discord_user_id = " + str(curLoser.id) + "\n"
-        sqlUpdateQuery += ";"
-        if sqlUpdateQuery:
+        if len(payout['winners']):
+            sqlUpdateQuery = "UPDATE pogs SET pogs = pogs + " + str(payout['winAmount'])
+            sqlUpdateQuery += "\nWHERE discord_user_id = "
+            sqlAdd = " OR discord_user_id = "
+            for curWinner in payout['winners']:
+                sqlUpdateQuery += str(curWinner.id) + "\n" + sqlAdd
+            sqlUpdateQuery = sqlUpdateQuery[:len(sqlUpdateQuery) - len(sqlAdd)]
+            print(sqlUpdateQuery)
+            myCursor.execute(sqlUpdateQuery)
+            db.commit()
+        if len(payout['losers']):
+            sqlUpdateQuery = "UPDATE pogs SET pogs = pogs - " + str(payout['loseAmount'])
+            sqlUpdateQuery += "\nWHERE discord_user_id = "
+            sqlAdd = " OR discord_user_id = "
+            for curLoser in payout['losers']:
+                sqlUpdateQuery += str(curLoser.id) + "\n" + sqlAdd
+            sqlUpdateQuery = sqlUpdateQuery[:len(sqlUpdateQuery) - len(sqlAdd)]
+            print(sqlUpdateQuery)
             myCursor.execute(sqlUpdateQuery)
             db.commit()
 
     # Returns all rows from pogs
     @staticmethod
-    def selectAllPogs():
-        db = getConnection()
+    def selectAllPogs(db):
         myCursor = db.cursor()
         sql = "SELECT * FROM pogs ORDER BY pogs DESC;"
         myCursor.execute(sql)
