@@ -14,6 +14,7 @@ import threading
 # Customs
 from ColdOneCore import CoreColors, getConnection
 from Bet import Bet
+from Vote import Vote
 from JokeGetter import JokeGetter
 from Vote import Vote
 from EventHandlers.ReactionHandler import ReactionHandler
@@ -21,7 +22,6 @@ from EventHandlers.ReactionHandler import ReactionHandler
 botPrefix = "&"
 bot = commands.Bot(command_prefix=botPrefix)
 pogUrl = "https://img2.123clipartpng.com/poggers-transparent-picture-2101472-poggers-transparent-poggers-emote-transparent-clipart-300_300.png"
-defaultAmount = 50
 
 # probability a track will play (1-1000) and the track name
 tracks = [
@@ -262,7 +262,7 @@ async def parseVote(ctx):
 # Gets and sends out a random joke
 @bot.command(name="joke", help="Get me a joke :pog:")
 async def getMeAJokeBaby(ctx):
-    await ctx.channel.send(embed=JokeGetter.getJokeEmbed())
+    await ctx.channel.send(embed=JokeGetter.getEmbed())
 
 # Bet Shit
 

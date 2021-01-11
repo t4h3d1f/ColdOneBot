@@ -2,8 +2,9 @@ import discord
 import requests
 
 from ColdOneCore import CoreColors
+from Discord.HasEmbed import HasEmbed
 
-class JokeGetter:
+class JokeGetter(HasEmbed):
 
     apiBaseUrl = "https://icanhazdadjoke.com/"
 
@@ -18,7 +19,7 @@ class JokeGetter:
 
     # Creates a discord embed with a fresh joke
     @staticmethod
-    def getJokeEmbed():
+    def getEmbed():
         joke = JokeGetter.getJoke()
         jokeEmbed = discord.Embed(color=CoreColors.MessageColor, title=joke)
         jokeEmbed.set_author(name="Joke:")
