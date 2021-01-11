@@ -1,6 +1,6 @@
 import discord
 
-from ColdOneCore import CoreColors
+from ColdOneCore import CoreColors, getConnection
 from VoteBase import VoteBase
 from Discord.HasAddReactCallback import HasAddReactCallback
 from EventHandlers.ReactionHandler import ReactionHandler
@@ -24,29 +24,31 @@ class Bet(VoteBase, HasAddReactCallback):
         del Bet.activeBets[author]
         return bet
 
-    # Verifies that each user involved in the bet exists in the user table
+    # Verifies that a user involved in the bet exists in the user table
     @staticmethod
-    def checkUsersExist(payout, myCursor, db):
-        usersToCheck = payout['winners'] + payout['losers']
+    def checkUserExists(user):
         usersToAdd = []
         getAllSql = "SELECT discord_user_id FROM pogs;"
         insertSql = "INSERT INTO pogs(discord_user_id, username, pogs) VALUES (%s, %s, %s);"
+        db = getConnection()
+        myCursor = db.cursor()
         myCursor.execute(getAllSql)
         getAllRet = myCursor.fetchall()
-        for curUser in usersToCheck:
-            tuple = (str(curUser.id),)
-            if not tuple in getAllRet:
-                # add user
-                insertVals = (str(curUser.id), str(curUser.name), 1000)
-                myCursor.execute(insertSql, insertVals)
-                db.commit()
+        tuple = (str(user.id),)
+        if not tuple in getAllRet:
+            # add user
+            insertVals = (str(user.id), str(user.name), 1000)
+            myCursor.execute(insertSql, insertVals)
+            db.commit()
 
     # Updates pog table with winner and loser amounts
     @staticmethod
-    def updateUserPogs(payout, myCursor, db):
+    def updateUserPogs(payout):
         if ((not payout['winners']) and (not payout['losers'])):
             return
         # If winners exist, update them
+        db = getConnection()
+        myCursor = db.cursor()
         if len(payout['winners']):
             sqlUpdateQuery = "UPDATE pogs SET pogs = pogs + " + str(payout['winAmount'])
             sqlUpdateQuery += "\nWHERE discord_user_id = "
@@ -56,20 +58,12 @@ class Bet(VoteBase, HasAddReactCallback):
             sqlUpdateQuery = sqlUpdateQuery[:len(sqlUpdateQuery) - len(sqlAdd)]
             myCursor.execute(sqlUpdateQuery)
             db.commit()
-        # If losers exist, update them too
-        if len(payout['losers']):
-            sqlUpdateQuery = "UPDATE pogs SET pogs = pogs - " + str(payout['loseAmount'])
-            sqlUpdateQuery += "\nWHERE discord_user_id = "
-            sqlAdd = " OR discord_user_id = "
-            for curLoser in payout['losers']:
-                sqlUpdateQuery += str(curLoser.id) + "\n" + sqlAdd
-            sqlUpdateQuery = sqlUpdateQuery[:len(sqlUpdateQuery) - len(sqlAdd)]
-            myCursor.execute(sqlUpdateQuery)
-            db.commit()
+        # Don't need to update losers as they already lost with the bet.
 
     # Returns all rows from pogs
     @staticmethod
-    def selectAllPogs(db):
+    def selectAllPogs():
+        db = getConnection()
         myCursor = db.cursor()
         sql = "SELECT * FROM pogs ORDER BY pogs DESC;"
         myCursor.execute(sql)
@@ -87,15 +81,13 @@ class Bet(VoteBase, HasAddReactCallback):
     #
     # TODO: Edit or delete old embed from bet creation
     @staticmethod
-    async def closeBet(ctx, db, bet, message):
+    async def closeBet(ctx, bet, message):
         if not bet:
             return
         forsWin = message.find("win") != -1
         payouts = bet.calculatePayouts(forsWin)
         print("Payout: " + str(payouts))
-        myCursor = db.cursor()
-        Bet.checkUsersExist(payouts, myCursor, db)
-        Bet.updateUserPogs(payouts, myCursor, db)
+        Bet.updateUserPogs(payouts)
         await bet.clearEmbed()
         await bet.getCloseEmbed(ctx, payouts)
         return
@@ -148,10 +140,32 @@ class Bet(VoteBase, HasAddReactCallback):
     def addReactCallback(self, react: discord.Reaction, user: discord.User):
         if (user in self.voteFor) or (user in self.voteAgainst):
             return
+        Bet.checkUserExists(user)
+        self.withdrawBetAmount(user)
         if react.emoji == "👍":
             self.voteFor.append(user)
         if react.emoji == "👎":
             self.voteAgainst.append(user)
+
+    # Withdraws either the amount or the user's full balance to count the user
+    # in the bet.
+    def withdrawBetAmount(self, user):
+        query = "SELECT pogs FROM pogs WHERE discord_user_id=" + str(user.id)
+        db = getConnection()
+        myCursor = db.cursor()
+        myCursor.execute(query)
+        selectRet = myCursor.fetchall()
+        userAmount = int((selectRet[0])[0]) if int((selectRet[0])[0]) > 0 else 0
+        if userAmount > self.amount:
+            # Valid to bet
+            query = "UPDATE pogs SET pogs = pogs - " + str(self.amount)
+            query += " WHERE discord_user_id = " + str(user.id)
+        else:
+            # Valid to bet
+            query = "UPDATE pogs SET pogs = pogs - " + str(userAmount)
+            query += " WHERE discord_user_id = " + str(user.id)
+        myCursor.execute(query)
+        db.commit()
 
     # Calculates the payouts for the winners and losers.
     def calculatePayouts(self, forsWin = True):
