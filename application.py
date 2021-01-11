@@ -12,10 +12,12 @@ from bisect import bisect_right
 import threading
 
 # Customs
-from ColdOneCore import CoreColors
+from ColdOneCore import CoreColors, getConnection
 from Bet import Bet
 from Vote import Vote
 from JokeGetter import JokeGetter
+from Vote import Vote
+from EventHandlers.ReactionHandler import ReactionHandler
 
 botPrefix = "&"
 bot = commands.Bot(command_prefix=botPrefix)
@@ -52,7 +54,6 @@ memer = None
 memeThread = None
 server = None
 
-
 class Timer:
     def __init__(self, min_interval, max_interval, callback):
         self._callback = callback
@@ -82,18 +83,6 @@ class Timer:
         self._running = False
         self._task.cancel()
 
-
-def getConnection():
-    mydb = pymysql.connect(
-        host=os.environ.get("SQL_HOST"),
-        port=3306,
-        db=os.environ.get("SQL_DB"),
-        user=os.environ.get("SQL_USER"),
-        password=os.environ.get("SQL_PASSWORD")
-    )
-    return mydb
-
-
 @bot.event
 async def on_message(message):
     await bot.process_commands(message)
@@ -108,7 +97,6 @@ async def on_message(message):
                 mycursor.execute(sql, vals)
                 mydb.commit()
                 mydb.close()
-
 
 @bot.command(name="coco", help="Crack open a cold one with the boys")
 async def coco(ctx):
@@ -153,7 +141,6 @@ async def coco(ctx):
     await ctx.voice_client.disconnect()
     mydb.close()
 
-
 # Start monitoring for user in voice channel.
 # once enabled will join voice chat after a random amount of time
 # and play a meme audio clip.
@@ -169,7 +156,6 @@ async def automeme_enable(message):
     global memeThread
     memeThread = Timer(180, 900, blast_meme)
 
-
 # Stop memeThread and clear original user from memory
 @bot.command(name="nofunnybusiness", help="Disables automeme")
 async def automeme_disable(message):
@@ -178,7 +164,6 @@ async def automeme_disable(message):
             memeThread.cancel()
             global memer
             memer = None
-
 
 @bot.command(name="stats", help="View your drinking stats")
 async def stats(message):
@@ -193,7 +178,6 @@ async def stats(message):
     if result[0][0] > 100:
         await message.channel.send('you alcholholic')
     mydb.close()
-
 
 async def blast_meme(idx):
     userid = memer.id
@@ -218,7 +202,6 @@ async def blast_meme(idx):
         await asyncio.sleep(1)
     await server.voice_client.disconnect()
 
-
 @bot.command(name="leaderboard",
              help="View the current drinking leaders of the server")
 async def leaderboard(message):
@@ -239,7 +222,6 @@ async def leaderboard(message):
     await message.channel.send(response)
     mydb.close()
 
-
 @bot.command(name="ohno", help="Try and and find out")
 async def ohno(message):
     channel = message.author.voice.channel
@@ -251,7 +233,6 @@ async def ohno(message):
     while message.voice_client.is_playing():
         await asyncio.sleep(1)
     await message.voice_client.disconnect()
-
 
 @bot.command(name="durag", help="Would you tell me the truth?")
 async def durag(message):
@@ -268,11 +249,11 @@ async def durag(message):
 # Parses if this is vote creation or closure
 @bot.command(name="vote", help="Call a vote, exercise your civic right")
 async def parseVote(ctx):
-    cmdBase = botPrefix + "bet "
+    cmdBase = botPrefix + "vote "
     author = ctx.author.name
     message = ctx.message.content[len(cmdBase):]
     if Vote.doesUserVoteExist(author):
-        await Vote.closeVote(Vote.popVote(author))
+        await Vote.closeVote(ctx, Vote.popVote(author))
     else:
         await Vote.createVote(ctx, author, message)
 
@@ -288,7 +269,7 @@ async def getMeAJokeBaby(ctx):
 # Bot command, displays the current pogs standings
 @bot.command(name="pogs", help="Show pogs baby")
 async def showPogs(ctx):
-    retVals = Bet.selectAllPogs(getConnection())
+    retVals = Bet.selectAllPogs()
     embed = discord.Embed(color=CoreColors.LeaderboardColor, title="Pog Leaderboard")
     embed.set_thumbnail(url=pogUrl)
     for row in retVals:
@@ -304,16 +285,25 @@ async def parseBet(ctx):
     author = ctx.author.name
     message = ctx.message.content[len(cmdBase):]
     if Bet.doesUserBetExist(author):
-        await Bet.closeBet(getConnection(), Bet.popBet(author), message)
+        await Bet.closeBet(ctx, Bet.popBet(author), message)
     else:
         await Bet.createBet(ctx, author, message)
 
 @bot.command(name="fIxThEsEmOnEy", help="fix the money, gotta be on a special spot tho")
 async def fixMoney(ctx):
+    guild = ctx.guild
+    print(guild.channels)
+    if len(guild.channels) > 4:
+        print("bail on fIxThEsEmOnEy")
+        return
     db = getConnection()
     mycursor = db.cursor()
-    mycursor.execute("UPDATE pogs SET pogs = 1000")
+    mycursor.execute("UPDATE pogs SET pogs = 50")
     db.commit()
+
+@bot.event
+async def on_reaction_add(reaction, user):
+    ReactionHandler.checkForMessage(reaction, user)
 
 def main():
     try:
