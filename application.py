@@ -298,7 +298,7 @@ async def fixMoney(ctx):
         return
     db = getConnection()
     mycursor = db.cursor()
-    mycursor.execute("UPDATE pogs SET pogs = 50")
+    mycursor.execute("UPDATE pogs SET pogs = 1000")
     db.commit()
 
 @bot.event
