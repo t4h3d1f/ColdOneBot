@@ -18,6 +18,7 @@ from Vote import Vote
 from JokeGetter import JokeGetter
 from Vote import Vote
 from EventHandlers.ReactionHandler import ReactionHandler
+from Roll import Roll
 
 botPrefix = "&"
 bot = commands.Bot(command_prefix=botPrefix)
@@ -300,6 +301,12 @@ async def fixMoney(ctx):
     mycursor = db.cursor()
     mycursor.execute("UPDATE pogs SET pogs = 1000")
     db.commit()
+
+@bot.command(name="roll", help="Roll a die (&roll d<1-1000>")
+async def rollDie(ctx):
+    cmdBase = botPrefix + "roll "
+    message = ctx.message.content[len(cmdBase):]
+    ctx.message.channel.send(await Roll.roll(message))
 
 @bot.event
 async def on_reaction_add(reaction, user):
