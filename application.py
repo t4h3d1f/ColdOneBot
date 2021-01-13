@@ -306,7 +306,7 @@ async def fixMoney(ctx):
 async def rollDie(ctx):
     cmdBase = botPrefix + "roll "
     message = ctx.message.content[len(cmdBase):]
-    ctx.message.channel.send(await Roll.roll(message))
+    await ctx.message.channel.send(await Roll.roll(message))
 
 @bot.event
 async def on_reaction_add(reaction, user):

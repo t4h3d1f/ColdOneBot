@@ -10,8 +10,8 @@ class Roll(HasEmbed):
         super().setEmbedFields(title, author, desc, footer, thumbnail, color)
 
     @staticmethod
-    async def roll(self,message):
-        pattern = re.complile("d\d{1,10}$")
+    async def roll(message):
+        pattern = re.compile("d\d{1,10}$")
         if(pattern.search(message)):
             number = int(message[1:])
             rolled = randrange(number)
