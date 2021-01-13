@@ -15,7 +15,7 @@ class Roll(HasEmbed):
         if(pattern.search(message)):
             number = int(message[1:])
             rolled = randrange(number)
-            if(number+1 == rolled): #number +1 because randrange returns [0 to num-1]
+            if(number == rolled+1): #number +1 because randrange returns [0 to num-1]
                 sendmsg = "You rolled a perfect " + str(rolled+1) + "!"
             elif(rolled == 0):
                 sendmsg = "You somehow rolled a 1."
