@@ -19,7 +19,7 @@ class Roll(HasEmbed):
                 sendmsg = "You rolled a perfect " + str(rolled+1) + "!"
             elif(rolled == 0):
                 sendmsg = "You somehow rolled a 1."
-            elif(rolled == 69):
+            elif(rolled == 68):
                 sendmsg = "You rolled 69. Nice."
             else:
                 sendmsg = "You rolled " + str(rolled+1) +"."
