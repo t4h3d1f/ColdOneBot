@@ -19,6 +19,7 @@ from JokeGetter import JokeGetter
 from Vote import Vote
 from EventHandlers.ReactionHandler import ReactionHandler
 from Roll import Roll
+from Poll import Poll
 
 botPrefix = "&"
 bot = commands.Bot(command_prefix=botPrefix)
@@ -290,6 +291,14 @@ async def parseBet(ctx):
     else:
         await Bet.createBet(ctx, author, message)
 
+# Poll Shit
+
+
+@bot.command(name="poll", help="Start a poll! Know which game to play next")
+async def parsePoll(ctx):
+    await Poll.createPoll(ctx, bot)
+
+
 @bot.command(name="fIxThEsEmOnEy", help="fix the money, gotta be on a special spot tho")
 async def fixMoney(ctx):
     guild = ctx.guild
@@ -306,7 +315,7 @@ async def fixMoney(ctx):
 async def rollDie(ctx):
     cmdBase = botPrefix + "roll "
     message = ctx.message.content[len(cmdBase):]
-    ctx.message.channel.send(await Roll.roll(message))
+    await ctx.message.channel.send(await Roll.roll(message))
 
 @bot.event
 async def on_reaction_add(reaction, user):
