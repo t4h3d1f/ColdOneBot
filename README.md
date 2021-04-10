@@ -16,10 +16,12 @@ To stop it:
     docker stop containerid #only need the first few chars of the id to work
 
 To delete the container
+
     docker ps -a #note the container ID
     docker rm containerid #only need the first few chars of the id to work
 
 If you messed up, you can delete the image with
+
     docker images #to list images
     docker rmi coldonebot:TAG
     
