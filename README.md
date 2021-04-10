@@ -1,6 +1,6 @@
 # ColdOneBot
 
-To build, `git clone` this repo. Then:
+To build, `git clone` this repo and `cd` into it. Then:
 
     docker build . -t coldonebot:TAG
     
