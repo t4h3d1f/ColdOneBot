@@ -20,6 +20,9 @@ from Vote import Vote
 from EventHandlers.ReactionHandler import ReactionHandler
 from Roll import Roll
 from Poll import Poll
+from Audio import Audio
+from Dinner import Dinner
+
 
 botPrefix = "&"
 bot = commands.Bot(command_prefix=botPrefix)
@@ -56,6 +59,7 @@ memer = None
 memeThread = None
 server = None
 
+
 class Timer:
     def __init__(self, min_interval, max_interval, callback):
         self._callback = callback
@@ -85,6 +89,7 @@ class Timer:
         self._running = False
         self._task.cancel()
 
+
 @bot.event
 async def on_message(message):
     await bot.process_commands(message)
@@ -99,6 +104,7 @@ async def on_message(message):
                 mycursor.execute(sql, vals)
                 mydb.commit()
                 mydb.close()
+
 
 @bot.command(name="coco", help="Crack open a cold one with the boys")
 async def coco(ctx):
@@ -311,11 +317,22 @@ async def fixMoney(ctx):
     mycursor.execute("UPDATE pogs SET pogs = 1000")
     db.commit()
 
-@bot.command(name="roll", help="Roll a die (&roll d<1-1000>")
+@bot.command(name="roll", help="Roll a die (&roll d<1-1000>)")
 async def rollDie(ctx):
     cmdBase = botPrefix + "roll "
     message = ctx.message.content[len(cmdBase):]
     await ctx.message.channel.send(await Roll.roll(message))
+
+
+@bot.command(name='play', help='Plays the attached song. Use the -dank argument for memes [̲̅$̲̅(̲̅ ✧≖ ͜ʖ≖)̲̅$̲̅]')
+async def play(ctx):
+    await Audio.playSong(ctx)
+
+    
+@bot.command(name="dinner", help="Tells you what to get for dinner")
+async def rollDie(ctx):
+    await ctx.message.channel.send(await Dinner.dinner())
+
 
 @bot.event
 async def on_reaction_add(reaction, user):

@@ -15,14 +15,14 @@ class Roll(HasEmbed):
         if(pattern.search(message)):
             number = int(message[1:])
             rolled = randrange(number)
-            if(number == rolled): #number +1 because randrange returns [0 to num-1]
-                sendmsg = "You rolled a perfect " + str(number+1) + "!"
-            elif(number == 0):
+            if(number == rolled+1): #number +1 because randrange returns [0 to num-1]
+                sendmsg = "You rolled a perfect " + str(rolled+1) + "!"
+            elif(rolled == 0):
                 sendmsg = "You somehow rolled a 1."
-            elif(number == 69):
+            elif(rolled == 68):
                 sendmsg = "You rolled 69. Nice."
             else:
-                sendmsg = "You rolled " + str(number+1) +"."
+                sendmsg = "You rolled " + str(rolled+1) +"."
         else:
             sendmsg = "The format is roll d<number>"
         return sendmsg
