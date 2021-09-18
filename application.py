@@ -1,8 +1,19 @@
+from asyncio.windows_events import NULL
 import discord
 import asyncio
 import logging
 import os
 import traceback
+import threading
+import DiscordUtils
+from discord.embeds import Embed
+from discord.enums import ContentFilter
+from discord.ext.commands.help import Paginator
+from discord_slash import SlashCommand
+from discord_slash.utils.manage_commands import create_option
+from discord_slash.utils.manage_components import create_button, create_actionrow, ComponentContext
+from discord_slash.utils.manage_components import wait_for_component
+from discord_slash.model import ButtonStyle
 from discord import FFmpegPCMAudio
 from discord.utils import get
 from discord.ext import commands
@@ -25,6 +36,16 @@ from Audio import Audio
 botPrefix = "&"
 bot = commands.Bot(command_prefix=botPrefix)
 pogUrl = "https://img2.123clipartpng.com/poggers-transparent-picture-2101472-poggers-transparent-poggers-emote-transparent-clipart-300_300.png"
+
+client = discord.Client(intents=discord.Intents.all())
+slash = SlashCommand(client, sync_commands=True)
+
+# put server id here
+guild_ids = [733131307256774686]
+
+
+musicTread = DiscordUtils.Music()
+
 
 # probability a track will play (1-1000) and the track name
 tracks = [
@@ -58,6 +79,9 @@ memeThread = None
 server = None
 
 
+# interactive stuff
+
+
 class Timer:
     def __init__(self, min_interval, max_interval, callback):
         self._callback = callback
@@ -68,7 +92,8 @@ class Timer:
         print('timer initialized')
 
     async def _job(self):
-        playlist = [randint(0, len(memeTracks)-1) for i in range(len(memeTracks))]
+        playlist = [randint(0, len(memeTracks)-1)
+                    for i in range(len(memeTracks))]
         playlistIdx = 0
         while self._running:
             sleepTime = randint(self._min_interval, self._max_interval)
@@ -88,23 +113,25 @@ class Timer:
         self._task.cancel()
 
 
-@bot.event
-async def on_message(message):
-    await bot.process_commands(message)
-    if "durag" in message.content:
-        if "&durag" not in message.content:
-            if not message.author.bot:
-                print(message)
-                sql = "INSERT INTO durag (durag_time, username) VALUES (%s,%s)"
-                vals = (message.created_at, message.author.name)
-                mydb = getConnection()
-                mycursor = mydb.cursor()
-                mycursor.execute(sql, vals)
-                mydb.commit()
-                mydb.close()
+# @bot.event
+# async def on_message(message):
+#     await bot.process_commands(message)
+#     if "durag" in message.content:
+#         if "&durag" not in message.content:
+#             if not message.author.bot:
+#                 print(message)
+#                 sql = "INSERT INTO durag (durag_time, username) VALUES (%s,%s)"
+#                 vals = (message.created_at, message.author.name)
+#                 mydb = getConnection()
+#                 mycursor = mydb.cursor()
+#                 mycursor.execute(sql, vals)
+#                 mydb.commit()
+#                 mydb.close()
 
 
-@bot.command(name="coco", help="Crack open a cold one with the boys")
+# @bot.command(name="coco", help="Crack open a cold one with the boys")
+@slash.slash(name='coco', description="Crack open a cold one with the boys",
+             guild_ids=guild_ids)
 async def coco(ctx):
     message = ctx.message
     print(message)
@@ -152,7 +179,10 @@ async def coco(ctx):
 # and play a meme audio clip.
 # continues until manually disabled with "nofunnybusiness" or
 # user leaves voice chat.
-@bot.command(name="automeme", help="Automatic meming (☞⌐▀͡ ͜ʖ͡▀ )☞")
+
+
+@slash.slash(name="automeme", description="Automatic meming (☞⌐▀͡ ͜ʖ͡▀ )☞",
+             guild_ids=guild_ids)
 async def automeme_enable(message):
     global memer
     memer = message.author
@@ -163,7 +193,10 @@ async def automeme_enable(message):
     memeThread = Timer(180, 900, blast_meme)
 
 # Stop memeThread and clear original user from memory
-@bot.command(name="nofunnybusiness", help="Disables automeme")
+
+
+@slash.slash(name="nofunnybusiness", description="Disables automeme",
+             guild_ids=guild_ids)
 async def automeme_disable(message):
     if memeThread is not None:
         if memeThread.is_alive():
@@ -171,7 +204,9 @@ async def automeme_disable(message):
             global memer
             memer = None
 
-@bot.command(name="stats", help="View your drinking stats")
+
+@slash.slash(name="stats", description="View your drinking stats",
+             guild_ids=guild_ids)
 async def stats(message):
     mydb = getConnection()
     mycursor = mydb.cursor()
@@ -180,10 +215,11 @@ async def stats(message):
     result = mycursor.fetchall()
     print(result[0][0])
     await message.channel.send("{0} has recorded {1} cold ones opened!".format(
-                                message.author.name, result[0][0]))
+        message.author.name, result[0][0]))
     if result[0][0] > 100:
         await message.channel.send('you alcholholic')
     mydb.close()
+
 
 async def blast_meme(idx):
     userid = memer.id
@@ -208,12 +244,15 @@ async def blast_meme(idx):
         await asyncio.sleep(1)
     await server.voice_client.disconnect()
 
-@bot.command(name="leaderboard",
-             help="View the current drinking leaders of the server")
+
+@slash.slash(name="leaderboard",
+             description="View the current drinking leaders of the server",
+             guild_ids=guild_ids)
 async def leaderboard(message):
     mydb = getConnection()
     mycursor = mydb.cursor()
-    mycursor.execute('SELECT username from coldOnes GROUP BY username ORDER BY COUNT(*) DESC LIMIT 5;')
+    mycursor.execute(
+        'SELECT username from coldOnes GROUP BY username ORDER BY COUNT(*) DESC LIMIT 5;')
     result = mycursor.fetchall()
     response = ""
     place = 1
@@ -228,7 +267,9 @@ async def leaderboard(message):
     await message.channel.send(response)
     mydb.close()
 
-@bot.command(name="ohno", help="Try and and find out")
+
+@slash.slash(name="ohno", description="Try and and find out",
+             guild_ids=guild_ids)
 async def ohno(message):
     channel = message.author.voice.channel
     if not channel:
@@ -240,7 +281,9 @@ async def ohno(message):
         await asyncio.sleep(1)
     await message.voice_client.disconnect()
 
-@bot.command(name="durag", help="Would you tell me the truth?")
+
+@slash.slash(name="durag", description="Would you tell me the truth?",
+             guild_ids=guild_ids)
 async def durag(message):
     mydb = getConnection()
     mycursor = mydb.cursor()
@@ -253,7 +296,10 @@ async def durag(message):
 # Vote Shit
 
 # Parses if this is vote creation or closure
-@bot.command(name="vote", help="Call a vote, exercise your civic right")
+
+
+@slash.slash(name="vote", description="Call a vote, exercise your civic right",
+             guild_ids=guild_ids)
 async def parseVote(ctx):
     cmdBase = botPrefix + "vote "
     author = ctx.author.name
@@ -266,17 +312,24 @@ async def parseVote(ctx):
 # Joke Shit
 
 # Gets and sends out a random joke
-@bot.command(name="joke", help="Get me a joke :pog:")
+
+
+@slash.slash(name="joke", description="Get me a joke :pog:",
+             guild_ids=guild_ids)
 async def getMeAJokeBaby(ctx):
     await ctx.channel.send(embed=JokeGetter.getEmbed())
 
 # Bet Shit
 
 # Bot command, displays the current pogs standings
-@bot.command(name="pogs", help="Show pogs baby")
+
+
+@slash.slash(name="pogs", description="Show pogs baby",
+             guild_ids=guild_ids)
 async def showPogs(ctx):
     retVals = Bet.selectAllPogs()
-    embed = discord.Embed(color=CoreColors.LeaderboardColor, title="Pog Leaderboard")
+    embed = discord.Embed(
+        color=CoreColors.LeaderboardColor, title="Pog Leaderboard")
     embed.set_thumbnail(url=pogUrl)
     for row in retVals:
         embed.add_field(name=row[2], value=row[3], inline=True)
@@ -285,7 +338,10 @@ async def showPogs(ctx):
     await channel.send(embed=embed)
 
 # Bot command, reads the message, and creates or close out the bet
-@bot.command(name="bet", help="Bet pogs baby")
+
+
+@slash.slash(name="bet", description="Bet pogs baby",
+             guild_ids=guild_ids)
 async def parseBet(ctx):
     cmdBase = botPrefix + "bet "
     author = ctx.author.name
@@ -298,12 +354,14 @@ async def parseBet(ctx):
 # Poll Shit
 
 
-@bot.command(name="poll", help="Start a poll! Know which game to play next")
+@slash.slash(name="poll", description="Start a poll! Know which game to play next",
+             guild_ids=guild_ids)
 async def parsePoll(ctx):
     await Poll.createPoll(ctx, bot)
 
 
-@bot.command(name="fIxThEsEmOnEy", help="fix the money, gotta be on a special spot tho")
+@slash.slash(name="fIxThEsEmOnEy", description="fix the money, gotta be on a special spot tho",
+             guild_ids=guild_ids)
 async def fixMoney(ctx):
     guild = ctx.guild
     print(guild.channels)
@@ -315,30 +373,168 @@ async def fixMoney(ctx):
     mycursor.execute("UPDATE pogs SET pogs = 1000")
     db.commit()
 
-@bot.command(name="roll", help="Roll a die (&roll d<1-1000>")
-async def rollDie(ctx):
-    cmdBase = botPrefix + "roll "
-    message = ctx.message.content[len(cmdBase):]
-    await ctx.message.channel.send(await Roll.roll(message))
+
+@slash.slash(name="roll", description="Roll a die (&roll d<1-1000>",
+             options=[
+                 create_option(
+                     name='d',
+                     description='number of sides on the die',
+                     option_type=4,
+                     required=True
+                 )
+             ],
+             guild_ids=guild_ids)
+async def rollDie(ctx, d: int):
+    # cmdBase = botPrefix + "roll "
+    # message = ctx.message.content[len(cmdBase):]
+    await ctx.send(await Roll.roll(d))
 
 
-@bot.command(name='play', help='Plays the attached song. Use the -dank argument for memes [̲̅$̲̅(̲̅ ✧≖ ͜ʖ≖)̲̅$̲̅]')
-async def play(ctx):
-    await Audio.playSong(ctx)
+@slash.slash(name='MusicBot', description='Open the music control panel', guild_ids=guild_ids)
+async def buttons(ctx):
+    buttons = [
+        create_button(
+            style=ButtonStyle.green,
+            label='▶',
+            custom_id='resume'
+        ),
+        create_button(
+            style=ButtonStyle.blue,
+            label='⏸',
+            custom_id='pause'
+        ),
+        create_button(
+            style=ButtonStyle.red,
+            label='⏹',
+            custom_id='stop'
+        ),
+        create_button(
+            style=ButtonStyle.blue,
+            label='⏭',
+            custom_id='skip'
+        ),
+        create_button(
+            style=ButtonStyle.gray,
+            label='📃',
+            custom_id='queue'
+        )
+    ]
+    action_row = create_actionrow(*buttons)
+    await ctx.send('Now playing...', components=[action_row])
+    # button_ctx: ComponentContext = await wait_for_component(client, components=action_row)
+    # await button_ctx.edit_origin(content="You pressed a button!")
 
-@bot.event
-async def on_reaction_add(reaction, user):
-    ReactionHandler.checkForMessage(reaction, user)
 
-def main():
-    try:
-        while(True):
-            print('hello')
-            bot.run(os.environ.get('DISCORD_TOKEN'))
-            bot.logout()
-    except Exception as e:
-        logging.error(traceback.format_exc())
+# @slash.slash(name='play', description='Plays the attached song. Use the -dank argument for memes [̲̅$̲̅(̲̅ ✧≖ ͜ʖ≖)̲̅$̲̅]',
+#              guild_ids=guild_ids)
+# async def play(ctx):
+#     await Audio.playSong(ctx)
 
 
-if __name__ == "__main__":
-    main()
+@slash.slash(name='dj', description='Add the bot to the current voice channel', guild_ids=guild_ids)
+async def join(ctx):
+    print('joining')
+    await ctx.author.voice.channel.connect()
+    await ctx.send('connected to voice',  hidden=True)
+    # await ctx.delete()
+    #
+
+
+@slash.slash(name='dj_disconnect', description='disconnect bot from voice', guild_ids=guild_ids)
+async def disconnect(ctx):
+    print('disconnecting')
+    await ctx.voice_client.disconnect()
+    await ctx.send('disconnected from voice', hidden=True)
+
+
+@slash.slash(name='Play',
+             options=[
+                 create_option(
+                     name='url',
+                     description='youtube url',
+                     option_type=3,
+                     required=True
+                 )
+             ],
+             guild_ids=guild_ids)
+async def play(ctx, url):
+    player = musicTread.get_player(guild_id=ctx.guild.id)
+    if not ctx.voice_client:
+        await ctx.author.voice.channel.connect()
+    if not player:
+        player = musicTread.create_player(ctx, ffmpeg_error_betterfix=True)
+    if not ctx.voice_client.is_playing():
+        await ctx.defer()
+        await player.queue(url, search=True)
+        song = await player.play()
+
+        await ctx.send(f"Playing {song.name}", hidden=True)
+    else:
+        song = await player.queue(url, search=True)
+        await ctx.send(f"Queued {song.name}", hidden=True)
+
+
+@slash.component_callback()
+async def pause(ctx: ComponentContext):
+    player = musicTread.get_player(guild_id=ctx.guild.id)
+    song = await player.pause()
+    await ctx.edit_origin(content='Paused')
+
+
+@slash.component_callback()
+async def resume(ctx: ComponentContext):
+    player = musicTread.get_player(guild_id=ctx.guild.id)
+    song = await player.resume()
+    await ctx.edit_origin(content='Resuming')
+
+
+@slash.component_callback()
+async def stop(ctx: ComponentContext):
+    player = musicTread.get_player(guild_id=ctx.guild.id)
+    await player.stop()
+    await ctx.voice_client.disconnect()
+    await ctx.edit_origin(content="Stopped")
+
+
+@slash.component_callback()
+async def skip(ctx: ComponentContext):
+    player = musicTread.get_player(guild_id=ctx.guild.id)
+    data = await player.skip(force=True)
+    if len(data) == 2:
+        await ctx.edit_origin(content=f"Skipped from {data[0].name} to {data[1].name}")
+    else:
+        await ctx.edit_origin(content=f"Skipped {data[0].name}")
+
+
+@slash.component_callback()
+async def queue(ctx: ComponentContext):
+    player = musicTread.get_player(guild_id=ctx.guild.id)
+    queueMsg = ''
+    for song in player.current_queue():
+        queueMsg += song.name+'\n'
+    embed = discord.Embed(color=ctx.author.color).add_field(
+        name='Current Queue', value=queueMsg)
+    await ctx.send(embed=embed)
+# @bot.event
+# async def on_reaction_add(reaction, user):
+#     ReactionHandler.checkForMessage(reaction, user)
+
+# def main():
+#     try:
+#         while(True):
+#             print('hello')
+#             bot.run(os.environ.get('DISCORD_TOKEN'))
+#             bot.logout()
+#     except Exception as e:
+#         logging.error(traceback.format_exc())
+
+
+@client.event
+async def on_ready():
+    print('online')
+
+
+client.run(os.environ.get('DISCORD_TOKEN'))
+
+# if __name__ == "__main__":
+#     main()
