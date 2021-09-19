@@ -1,5 +1,6 @@
 from asyncio.windows_events import NULL
 import discord
+import datetime
 import asyncio
 import logging
 import os
@@ -8,6 +9,7 @@ import threading
 import DiscordUtils
 from discord.embeds import Embed
 from discord.enums import ContentFilter
+from discord.ext.commands.core import has_guild_permissions
 from discord.ext.commands.help import Paginator
 from discord_slash import SlashCommand
 from discord_slash.utils.manage_commands import create_option
@@ -17,10 +19,11 @@ from discord_slash.model import ButtonStyle
 from discord import FFmpegPCMAudio
 from discord.utils import get
 from discord.ext import commands
-import pymysql.cursors
+
 from random import randint
 from bisect import bisect_right
 import threading
+import sqlite3 as sl
 
 # Customs
 from ColdOneCore import CoreColors, getConnection
@@ -43,6 +46,7 @@ slash = SlashCommand(client, sync_commands=True)
 # put server id here
 guild_ids = [733131307256774686]
 
+con = sl.connect('coldone.db')
 
 musicTread = DiscordUtils.Music()
 
@@ -113,54 +117,23 @@ class Timer:
         self._task.cancel()
 
 
-# @bot.event
-# async def on_message(message):
-#     await bot.process_commands(message)
-#     if "durag" in message.content:
-#         if "&durag" not in message.content:
-#             if not message.author.bot:
-#                 print(message)
-#                 sql = "INSERT INTO durag (durag_time, username) VALUES (%s,%s)"
-#                 vals = (message.created_at, message.author.name)
-#                 mydb = getConnection()
-#                 mycursor = mydb.cursor()
-#                 mycursor.execute(sql, vals)
-#                 mydb.commit()
-#                 mydb.close()
-
-
-# @bot.command(name="coco", help="Crack open a cold one with the boys")
 @slash.slash(name='coco', description="Crack open a cold one with the boys",
              guild_ids=guild_ids)
 async def coco(ctx):
-    message = ctx.message
-    print(message)
-    sql = "INSERT INTO coldOnes (time, username) VALUES (%s,%s)"
-    vals = (message.created_at, message.author.name)
-    mydb = getConnection()
-    mycursor = mydb.cursor()
-    mycursor.execute(sql, vals)
-    mydb.commit()
-    mycursor.execute("SELECT COUNT(*) FROM coldOnes")
-    myresult = mycursor.fetchall()
+    with con:
+        con.execute(f'INSERT INTO coldOnes (time, username) VALUES (?,?);',
+                    (datetime.datetime.now(), ctx.author.id))
+        cursor = con.execute("SELECT COUNT(*) FROM coldOnes")
+        myresult = cursor.fetchall()
     chance = randint(1, 100)
     if chance > 90:
-        await message.channel.send("I'm gnot a gnelf, I'm gnot a gnoblin, I'm a gnome, and you've been GNOMED!".format(myresult[0][0]))
+        await ctx.send("I'm gnot a gnelf, I'm gnot a gnoblin, I'm a gnome, and you've been GNOMED!".format(myresult[0][0]), hidden=True)
     else:
-        await message.channel.send("Nice! {0} cold ones have been opened!".format(myresult[0][0]))
-
-    if message.author.name == "Adventure_Tom":
-        emoji = get(bot.emojis, name='Maybe')
-        await message.add_reaction(emoji)
-    if message.author.name == "Captain Crayfish":
-        emoji = get(bot.emojis, name='Wooo')
-        await message.add_reaction(emoji)
-    if not message.author.voice:
-        mydb.close()
+        await ctx.send(f"Nice! {myresult[0][0]} cold ones have been opened!", hidden=True)
+    if not ctx.author.voice:
         return
-    channel = message.author.voice.channel
+    channel = ctx.author.voice.channel
     if not channel:
-        mydb.close()
         return
     await channel.connect()
     # Generate a number between 1 and 1000
@@ -172,7 +145,7 @@ async def coco(ctx):
     while ctx.voice_client.is_playing():
         await asyncio.sleep(1)
     await ctx.voice_client.disconnect()
-    mydb.close()
+
 
 # Start monitoring for user in voice channel.
 # once enabled will join voice chat after a random amount of time
@@ -188,7 +161,6 @@ async def automeme_enable(message):
     memer = message.author
     global server
     server = message.guild
-    print(memer)
     global memeThread
     memeThread = Timer(180, 900, blast_meme)
 
@@ -208,28 +180,17 @@ async def automeme_disable(message):
 @slash.slash(name="stats", description="View your drinking stats",
              guild_ids=guild_ids)
 async def stats(message):
-    mydb = getConnection()
-    mycursor = mydb.cursor()
-    mycursor.execute('select COUNT(*) from coldOnes where username = %s;',
-                     (message.author.name,))
-    result = mycursor.fetchall()
-    print(result[0][0])
-    await message.channel.send("{0} has recorded {1} cold ones opened!".format(
+    cursor = con.execute('select COUNT(*) from coldOnes where username = ?;',
+                         (message.author.id,))
+    result = cursor.fetchall()
+    await message.send("{0} has recorded {1} cold ones opened!".format(
         message.author.name, result[0][0]))
-    if result[0][0] > 100:
-        await message.channel.send('you alcholholic')
-    mydb.close()
 
 
 async def blast_meme(idx):
     userid = memer.id
-    print(id)
     user = bot.get_user(userid)
-    print(user)
     member = server.get_member(user.id)
-    print(member.nick)
-    print(member.voice.channel)
-    print(member.voice.channel.id)
     channel = bot.get_channel(member.voice.channel.id)
     if not channel:
         memeThread.cancel()
@@ -249,37 +210,18 @@ async def blast_meme(idx):
              description="View the current drinking leaders of the server",
              guild_ids=guild_ids)
 async def leaderboard(message):
-    mydb = getConnection()
-    mycursor = mydb.cursor()
-    mycursor.execute(
+    cursor = con.execute(
         'SELECT username from coldOnes GROUP BY username ORDER BY COUNT(*) DESC LIMIT 5;')
-    result = mycursor.fetchall()
+    result = cursor.fetchall()
     response = ""
-    place = 1
-    print(result)
-    for name in result:
-        mycursor.execute('SELECT COUNT(*) from coldOnes where username=%s',
-                         (name[0],))
-        freq = mycursor.fetchall()
+    for place, id in enumerate(result):
+        cursor = con.execute('SELECT COUNT(*) from coldOnes where username=?',
+                             (id[0],))
+        freq = cursor.fetchall()
+        user = client.get_user(int(id[0]))
         response += "{0}. {1} with {2} cold one{3} opened!\r\n".format(
-                    place, name[0], freq[0][0], '' if freq[0][0] == 1 else "s")
-        place += 1
-    await message.channel.send(response)
-    mydb.close()
-
-
-@slash.slash(name="ohno", description="Try and and find out",
-             guild_ids=guild_ids)
-async def ohno(message):
-    channel = message.author.voice.channel
-    if not channel:
-        return
-    await channel.connect()
-    source = FFmpegPCMAudio('Sad Trombone.m4a')
-    player = message.voice_client.play(source)
-    while message.voice_client.is_playing():
-        await asyncio.sleep(1)
-    await message.voice_client.disconnect()
+                    place, user.name, freq[0][0], '' if freq[0][0] == 1 else "s")
+    await message.send(response)
 
 
 @slash.slash(name="durag", description="Would you tell me the truth?",
@@ -374,7 +316,7 @@ async def fixMoney(ctx):
     db.commit()
 
 
-@slash.slash(name="roll", description="Roll a die (&roll d<1-1000>",
+@slash.slash(name="roll", description="Roll a die",
              options=[
                  create_option(
                      name='d',
@@ -421,8 +363,6 @@ async def buttons(ctx):
     ]
     action_row = create_actionrow(*buttons)
     await ctx.send('Now playing...', components=[action_row])
-    # button_ctx: ComponentContext = await wait_for_component(client, components=action_row)
-    # await button_ctx.edit_origin(content="You pressed a button!")
 
 
 # @slash.slash(name='play', description='Plays the attached song. Use the -dank argument for memes [̲̅$̲̅(̲̅ ✧≖ ͜ʖ≖)̲̅$̲̅]',
@@ -433,16 +373,12 @@ async def buttons(ctx):
 
 @slash.slash(name='dj', description='Add the bot to the current voice channel', guild_ids=guild_ids)
 async def join(ctx):
-    print('joining')
     await ctx.author.voice.channel.connect()
     await ctx.send('connected to voice',  hidden=True)
-    # await ctx.delete()
-    #
 
 
 @slash.slash(name='dj_disconnect', description='disconnect bot from voice', guild_ids=guild_ids)
 async def disconnect(ctx):
-    print('disconnecting')
     await ctx.voice_client.disconnect()
     await ctx.send('disconnected from voice', hidden=True)
 
@@ -458,13 +394,14 @@ async def disconnect(ctx):
              ],
              guild_ids=guild_ids)
 async def play(ctx, url):
+
     player = musicTread.get_player(guild_id=ctx.guild.id)
     if not ctx.voice_client:
         await ctx.author.voice.channel.connect()
     if not player:
         player = musicTread.create_player(ctx, ffmpeg_error_betterfix=True)
     if not ctx.voice_client.is_playing():
-        await ctx.defer()
+        await ctx.defer(hidden=True)
         await player.queue(url, search=True)
         song = await player.play()
 
@@ -472,23 +409,28 @@ async def play(ctx, url):
     else:
         song = await player.queue(url, search=True)
         await ctx.send(f"Queued {song.name}", hidden=True)
+        # insert record
+    with con:
+        con.execute(
+            f'INSERT INTO MUSIC(url,title,user,date) values(?,?,?,?);',
+            (url, song.name, ctx.author.id, datetime.datetime.now()))
 
 
-@slash.component_callback()
+@ slash.component_callback()
 async def pause(ctx: ComponentContext):
     player = musicTread.get_player(guild_id=ctx.guild.id)
     song = await player.pause()
     await ctx.edit_origin(content='Paused')
 
 
-@slash.component_callback()
+@ slash.component_callback()
 async def resume(ctx: ComponentContext):
     player = musicTread.get_player(guild_id=ctx.guild.id)
     song = await player.resume()
     await ctx.edit_origin(content='Resuming')
 
 
-@slash.component_callback()
+@ slash.component_callback()
 async def stop(ctx: ComponentContext):
     player = musicTread.get_player(guild_id=ctx.guild.id)
     await player.stop()
@@ -496,7 +438,7 @@ async def stop(ctx: ComponentContext):
     await ctx.edit_origin(content="Stopped")
 
 
-@slash.component_callback()
+@ slash.component_callback()
 async def skip(ctx: ComponentContext):
     player = musicTread.get_player(guild_id=ctx.guild.id)
     data = await player.skip(force=True)
@@ -506,7 +448,7 @@ async def skip(ctx: ComponentContext):
         await ctx.edit_origin(content=f"Skipped {data[0].name}")
 
 
-@slash.component_callback()
+@ slash.component_callback()
 async def queue(ctx: ComponentContext):
     player = musicTread.get_player(guild_id=ctx.guild.id)
     queueMsg = ''
@@ -529,7 +471,7 @@ async def queue(ctx: ComponentContext):
 #         logging.error(traceback.format_exc())
 
 
-@client.event
+@ client.event
 async def on_ready():
     print('online')
 
