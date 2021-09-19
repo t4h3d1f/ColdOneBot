@@ -35,6 +35,8 @@ from EventHandlers.ReactionHandler import ReactionHandler
 from Roll import Roll
 from Poll import Poll
 from Audio import Audio
+from Dinner import Dinner
+
 
 botPrefix = "&"
 bot = commands.Bot(command_prefix=botPrefix)
@@ -316,6 +318,7 @@ async def fixMoney(ctx):
     db.commit()
 
 
+
 @slash.slash(name="roll", description="Roll a die",
              options=[
                  create_option(
@@ -470,6 +473,11 @@ async def queue(ctx: ComponentContext):
 #     except Exception as e:
 #         logging.error(traceback.format_exc())
 
+
+
+@bot.command(name="dinner", help="Tells you what to get for dinner")
+async def rollDie(ctx):
+    await ctx.message.channel.send(await Dinner.dinner())
 
 @ client.event
 async def on_ready():

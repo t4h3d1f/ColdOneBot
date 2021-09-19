@@ -6,12 +6,15 @@ from ColdOneCore import CoreColors, getConnection
 from Discord.HasEmbed import HasEmbed
 
 
-class Roll:
+
+class Roll(HasEmbed):
+
     def __init__(self, title, author=None, desc=None, footer=None, color=None, thumbnail=None):
         super().setEmbedFields(title, author, desc, footer, thumbnail, color)
 
     @staticmethod
     async def roll(message):
+
         # pattern = re.complile("d\d{1,10}$")
         # if(pattern.search(message)):
         # number = int(message[1:])
