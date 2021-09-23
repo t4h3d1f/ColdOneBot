@@ -42,7 +42,7 @@ botPrefix = "&"
 bot = commands.Bot(command_prefix=botPrefix)
 pogUrl = "https://img2.123clipartpng.com/poggers-transparent-picture-2101472-poggers-transparent-poggers-emote-transparent-clipart-300_300.png"
 
-client = discord.Client(intents=discord.Intents.all())
+client = discord.Client(intents=discord.Intents.default())
 slash = SlashCommand(client, sync_commands=True)
 
 # put server id here
@@ -271,7 +271,7 @@ async def getMeAJokeBaby(ctx):
 @slash.slash(name="pogs", description="Show pogs baby",
              guild_ids=guild_ids)
 async def showPogs(ctx):
-    retVals = Bet.selectAllPogs()
+    retVals = Bet.selectAllPogs(con)
     embed = discord.Embed(
         color=CoreColors.LeaderboardColor, title="Pog Leaderboard")
     embed.set_thumbnail(url=pogUrl)
@@ -290,7 +290,7 @@ async def parseBet(ctx):
     cmdBase = botPrefix + "bet "
     author = ctx.author.name
     message = ctx.message.content[len(cmdBase):]
-    if Bet.doesUserBetExist(author):
+    if Bet.doesUserBetExist(author, con):
         await Bet.closeBet(ctx, Bet.popBet(author), message)
     else:
         await Bet.createBet(ctx, author, message)
@@ -312,11 +312,8 @@ async def fixMoney(ctx):
     if len(guild.channels) > 4:
         print("bail on fIxThEsEmOnEy")
         return
-    db = getConnection()
-    mycursor = db.cursor()
-    mycursor.execute("UPDATE pogs SET pogs = 1000")
-    db.commit()
 
+    con.execute("UPDATE pogs SET pogs = 1000")
 
 
 @slash.slash(name="roll", description="Roll a die",
@@ -474,10 +471,10 @@ async def queue(ctx: ComponentContext):
 #         logging.error(traceback.format_exc())
 
 
-
 @bot.command(name="dinner", help="Tells you what to get for dinner")
 async def rollDie(ctx):
     await ctx.message.channel.send(await Dinner.dinner())
+
 
 @ client.event
 async def on_ready():

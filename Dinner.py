@@ -1,8 +1,9 @@
 import discord
 from random import choice
 
-from ColdOneCore import CoreColors, getConnection
+from ColdOneCore import CoreColors
 from Discord.HasEmbed import HasEmbed
+
 
 class Dinner(HasEmbed):
     dinnerchoices = ["Italian",

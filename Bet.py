@@ -1,12 +1,14 @@
+from asyncio.windows_events import NULL
 import discord
 
-from ColdOneCore import CoreColors, getConnection
+from ColdOneCore import CoreColors
 from VoteBase import VoteBase
 from Discord.HasAddReactCallback import HasAddReactCallback
 from EventHandlers.ReactionHandler import ReactionHandler
 
 pogUrl = "https://img2.123clipartpng.com/poggers-transparent-picture-2101472-poggers-transparent-poggers-emote-transparent-clipart-300_300.png"
 defaultAmount = 50
+
 
 class Bet(VoteBase, HasAddReactCallback):
 
@@ -26,47 +28,45 @@ class Bet(VoteBase, HasAddReactCallback):
 
     # Verifies that a user involved in the bet exists in the user table
     @staticmethod
-    def checkUserExists(user):
+    def checkUserExists(user, db):
         usersToAdd = []
         getAllSql = "SELECT discord_user_id FROM pogs;"
         insertSql = "INSERT INTO pogs(discord_user_id, username, pogs) VALUES (%s, %s, %s);"
-        db = getConnection()
-        myCursor = db.cursor()
-        myCursor.execute(getAllSql)
+
+        myCursor = db.execute(getAllSql)
         getAllRet = myCursor.fetchall()
         tuple = (str(user.id),)
         if not tuple in getAllRet:
             # add user
             insertVals = (str(user.id), str(user.name), 1000)
-            myCursor.execute(insertSql, insertVals)
-            db.commit()
+            db.execute(insertSql, insertVals)
 
     # Updates pog table with winner and loser amounts
+
     @staticmethod
-    def updateUserPogs(payout):
+    def updateUserPogs(payout, db):
         if ((not payout['winners']) and (not payout['losers'])):
             return
         # If winners exist, update them
-        db = getConnection()
-        myCursor = db.cursor()
+
         if len(payout['winners']):
-            sqlUpdateQuery = "UPDATE pogs SET pogs = pogs + " + str(payout['winAmount'])
+            sqlUpdateQuery = "UPDATE pogs SET pogs = pogs + " + \
+                str(payout['winAmount'])
             sqlUpdateQuery += "\nWHERE discord_user_id = "
             sqlAdd = " OR discord_user_id = "
             for curWinner in payout['winners']:
                 sqlUpdateQuery += str(curWinner.id) + "\n" + sqlAdd
             sqlUpdateQuery = sqlUpdateQuery[:len(sqlUpdateQuery) - len(sqlAdd)]
-            myCursor.execute(sqlUpdateQuery)
-            db.commit()
+            db.execute(sqlUpdateQuery)
+
         # Don't need to update losers as they already lost with the bet.
 
     # Returns all rows from pogs
     @staticmethod
-    def selectAllPogs():
-        db = getConnection()
-        myCursor = db.cursor()
+    def selectAllPogs(db):
+
         sql = "SELECT * FROM pogs ORDER BY pogs DESC;"
-        myCursor.execute(sql)
+        myCursor = db.execute(sql)
         return myCursor.fetchall()
 
     # Prints out all pogs to python output
@@ -98,7 +98,7 @@ class Bet(VoteBase, HasAddReactCallback):
     @staticmethod
     async def createBet(ctx, author, message):
         amount = defaultAmount
-        description = "";
+        description = ""
         msgSplit = message.split(", ")
         if len(msgSplit) > 1:
             amount = int(msgSplit[0].strip())
@@ -110,10 +110,10 @@ class Bet(VoteBase, HasAddReactCallback):
         ReactionHandler.listenOnMessage(bet)
 
     # Constructor, checks if the author has a bet and if not, adds to bets
-    def __init__(self, author, amount = 50, desc = ""):
+    def __init__(self, author, amount=50, desc=""):
         # Only one bet per user is allowed
         if Bet.doesUserBetExist(author):
-            return null
+            return NULL
         self.amount = amount
         self.author = author
         self.betDesc = desc
@@ -125,7 +125,7 @@ class Bet(VoteBase, HasAddReactCallback):
         if len(desc) > 0:
             title += ": " + desc
         footer = "Bet with them with +1, or against them with -1. End the bet by typing &bet, followed by win or lose."
-        HasAddReactCallback.__init__(self);
+        HasAddReactCallback.__init__(self)
         VoteBase.__init__(
             self,
             title=title,
@@ -134,7 +134,7 @@ class Bet(VoteBase, HasAddReactCallback):
             footer=footer,
             color=CoreColors.InteractColor,
             thumbnail=pogUrl)
-        Bet.activeBets.update({self.author:self})
+        Bet.activeBets.update({self.author: self})
 
     # Callback called when a react is added to this object's discord message.
     def addReactCallback(self, react: discord.Reaction, user: discord.User):
@@ -149,13 +149,13 @@ class Bet(VoteBase, HasAddReactCallback):
 
     # Withdraws either the amount or the user's full balance to count the user
     # in the bet.
-    def withdrawBetAmount(self, user):
+    def withdrawBetAmount(self, user, db):
         query = "SELECT pogs FROM pogs WHERE discord_user_id=" + str(user.id)
-        db = getConnection()
-        myCursor = db.cursor()
-        myCursor.execute(query)
+
+        myCursor = db.execute(query)
         selectRet = myCursor.fetchall()
-        userAmount = int((selectRet[0])[0]) if int((selectRet[0])[0]) > 0 else 0
+        userAmount = int((selectRet[0])[0]) if int(
+            (selectRet[0])[0]) > 0 else 0
         if userAmount > self.amount:
             # Valid to bet
             query = "UPDATE pogs SET pogs = pogs - " + str(self.amount)
@@ -164,11 +164,11 @@ class Bet(VoteBase, HasAddReactCallback):
             # Valid to bet
             query = "UPDATE pogs SET pogs = pogs - " + str(userAmount)
             query += " WHERE discord_user_id = " + str(user.id)
-        myCursor.execute(query)
-        db.commit()
+        db.execute(query)
 
     # Calculates the payouts for the winners and losers.
-    def calculatePayouts(self, forsWin = True):
+
+    def calculatePayouts(self, forsWin=True):
         countWinners = 0
         countLosers = 0
         winUsers = []
@@ -189,8 +189,9 @@ class Bet(VoteBase, HasAddReactCallback):
             if user in winUsers:
                 winUsers.remove(user)
 
-        retDict = {};
-        retDict['winAmount'] = 0 if countWinners < 1 else int((self.amount * countLosers) / countWinners)
+        retDict = {}
+        retDict['winAmount'] = 0 if countWinners < 1 else int(
+            (self.amount * countLosers) / countWinners)
         retDict['loseAmount'] = self.amount
         retDict['winners'] = winUsers
         retDict['losers'] = loseUsers
