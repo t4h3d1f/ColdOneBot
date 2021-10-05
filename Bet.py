@@ -1,4 +1,3 @@
-from asyncio.windows_events import NULL
 import discord
 
 from ColdOneCore import CoreColors
@@ -6,6 +5,7 @@ from VoteBase import VoteBase
 from Discord.HasAddReactCallback import HasAddReactCallback
 from EventHandlers.ReactionHandler import ReactionHandler
 
+NULL = 0
 pogUrl = "https://img2.123clipartpng.com/poggers-transparent-picture-2101472-poggers-transparent-poggers-emote-transparent-clipart-300_300.png"
 defaultAmount = 50
 

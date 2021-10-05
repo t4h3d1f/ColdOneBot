@@ -1,4 +1,3 @@
-import pymysql.cursors
 import os
 
 # Color palette:
