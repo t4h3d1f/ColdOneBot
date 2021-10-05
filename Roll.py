@@ -2,9 +2,8 @@ import discord
 import re
 from random import randrange
 
-from ColdOneCore import CoreColors, getConnection
+from ColdOneCore import CoreColors
 from Discord.HasEmbed import HasEmbed
-
 
 
 class Roll(HasEmbed):

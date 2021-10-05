@@ -1,4 +1,3 @@
-from asyncio.windows_events import NULL
 import discord
 import datetime
 import asyncio
@@ -26,7 +25,7 @@ import threading
 import sqlite3 as sl
 
 # Customs
-from ColdOneCore import CoreColors, getConnection
+from ColdOneCore import CoreColors
 from Bet import Bet
 from Vote import Vote
 from JokeGetter import JokeGetter
@@ -46,7 +45,7 @@ client = discord.Client(intents=discord.Intents.default())
 slash = SlashCommand(client, sync_commands=True)
 
 # put server id here
-guild_ids = [733131307256774686]
+guild_ids = []
 
 con = sl.connect('coldone.db')
 
